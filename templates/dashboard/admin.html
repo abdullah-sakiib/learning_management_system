@@ -1,0 +1,671 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard — EduFlow{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block page_subtitle %}Site-wide overview and management{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block user_name %}{{ display_name }}{% endblock %}
+{% block user_role %}Administrator{% endblock %}
+{% block topbar_user %}{{ display_name }}{% endblock %}
+{% block topbar_role %}Administrator{% endblock %}
+
+{% block extra_head %}
+<style>
+  .stat-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(99,102,241,0.10);
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .user-row { transition: background 0.2s ease; }
+  .user-row:hover { background: #f8f7ff; }
+
+  .course-row { transition: background 0.2s ease; }
+  .course-row:hover { background: #f8f7ff; }
+
+  /* Sparkline bar */
+  .spark-bar {
+    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Donut chart simulation via conic-gradient */
+  .donut {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: conic-gradient(
+      #6366f1 0% 42%,
+      #a5b4fc 42% 67%,
+      #c7d2fe 67% 84%,
+      #e0e7ff 84% 100%
+    );
+    position: relative;
+  }
+  .donut::after {
+    content: '';
+    position: absolute;
+    inset: 18px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  .badge-active   { background:#f0fdf4; color:#16a34a; }
+  .badge-inactive { background:#f1f5f9; color:#64748b; }
+  .badge-pending  { background:#fffbeb; color:#d97706; }
+  .badge-banned   { background:#fef2f2; color:#dc2626; }
+
+  .action-btn { transition: all 0.2s ease; }
+  .action-btn:hover { transform: translateY(-1px); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════
+     TOP WELCOME BANNER
+════════════════════════════════════ -->
+<div class="bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 rounded-2xl p-6 mb-6 relative overflow-hidden reveal">
+  <div class="absolute -right-8 -top-8 w-40 h-40 bg-white/5 rounded-full"></div>
+  <div class="absolute right-16 bottom-0 w-20 h-20 bg-white/5 rounded-full"></div>
+  <div class="absolute right-6 top-1/2 -translate-y-1/2 hidden md:block">
+    <i class="ri-shield-star-line text-white/10 text-8xl"></i>
+  </div>
+  <div class="relative z-10">
+    <p class="text-slate-400 text-sm font-medium mb-1" id="greeting-time">Good morning,</p>
+    <h1 class="text-white font-bold text-2xl mb-1">Administrator</h1>
+    <p class="text-slate-400 text-sm">Platform is running smoothly. <span class="text-emerald-400 font-semibold">All systems operational.</span></p>
+    <div class="flex flex-wrap gap-3 mt-4">
+      <a href="{% url 'admin:index' %}"
+         class="action-btn inline-flex items-center gap-2 bg-white text-slate-800 font-semibold text-sm px-4 py-2 rounded-xl shadow">
+        <i class="ri-settings-3-line"></i> Django Admin
+      </a>
+      <a href="#users-section"
+         class="action-btn inline-flex items-center gap-2 bg-white/10 border border-white/15 text-white font-medium text-sm px-4 py-2 rounded-xl">
+        <i class="ri-group-line"></i> Manage Users
+      </a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     STAT CARDS ROW 1
+════════════════════════════════════ -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4 reveal">
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
+        <i class="ri-group-line text-primary-600 text-lg"></i>
+      </div>
+      <span class="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">+24 this week</span>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">2,418</p>
+    <p class="text-xs text-slate-500">Total users</p>
+  </div>
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+        <i class="ri-book-open-line text-violet-600 text-lg"></i>
+      </div>
+      <span class="text-xs font-semibold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full">4 drafts</span>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">124</p>
+    <p class="text-xs text-slate-500">Total courses</p>
+  </div>
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+        <i class="ri-file-list-3-line text-amber-500 text-lg"></i>
+      </div>
+      <span class="text-xs font-semibold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">This week</span>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">1,284</p>
+    <p class="text-xs text-slate-500">Submissions total</p>
+  </div>
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+        <i class="ri-user-star-line text-emerald-600 text-lg"></i>
+      </div>
+      <span class="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">48</p>
+    <p class="text-xs text-slate-500">Instructors</p>
+  </div>
+
+</div>
+
+<!-- STAT CARDS ROW 2 -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 reveal">
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-sky-50 rounded-xl flex items-center justify-center">
+        <i class="ri-user-line text-sky-600 text-lg"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">2,358</p>
+    <p class="text-xs text-slate-500">Students</p>
+  </div>
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center">
+        <i class="ri-trophy-line text-rose-500 text-lg"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">72%</p>
+    <p class="text-xs text-slate-500">Avg. course completion</p>
+  </div>
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center">
+        <i class="ri-questionnaire-line text-teal-600 text-lg"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">348</p>
+    <p class="text-xs text-slate-500">Quizzes taken today</p>
+  </div>
+
+  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+        <i class="ri-shield-check-line text-orange-500 text-lg"></i>
+      </div>
+    </div>
+    <p class="text-2xl font-bold text-slate-800 mb-0.5">99.8%</p>
+    <p class="text-xs text-slate-500">System uptime</p>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════
+     MAIN GRID
+════════════════════════════════════ -->
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── LEFT (2/3) ───── -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- USER MANAGEMENT -->
+    <div id="users-section" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-800 text-base">Recent Users</h2>
+        <div class="flex items-center gap-2">
+          <!-- Filter -->
+          <select id="user-filter" onchange="filterUsers(this.value)"
+            class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-600 bg-white focus:outline-none focus:border-primary-300">
+            <option value="all">All roles</option>
+            <option value="student">Students</option>
+            <option value="instructor">Instructors</option>
+          </select>
+          <a href="{% url 'admin:auth_user_changelist' %}"
+             class="inline-flex items-center gap-1 text-xs font-semibold text-white bg-primary-500 hover:bg-primary-600 transition px-3 py-1.5 rounded-lg">
+            <i class="ri-external-link-line"></i> Full list
+          </a>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="users-table">
+          <thead>
+            <tr class="text-xs text-slate-400 font-semibold uppercase tracking-wide border-b border-slate-100">
+              <th class="text-left pb-3 pr-4">User</th>
+              <th class="text-left pb-3 pr-4">Role</th>
+              <th class="text-left pb-3 pr-4">Joined</th>
+              <th class="text-left pb-3 pr-4">Status</th>
+              <th class="text-right pb-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+
+            <tr class="user-row" data-role="student">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=H+G&background=818cf8&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Hermione Granger</p>
+                    <p class="text-xs text-slate-400">hermione@edu.ac</p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><span class="text-xs bg-primary-50 text-primary-600 font-medium px-2 py-0.5 rounded-full">Student</span></td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Jan 12, 2026</p></td>
+              <td class="py-3 pr-4"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Active</span></td>
+              <td class="py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="text-xs text-slate-400 hover:text-primary-600 transition"><i class="ri-edit-line"></i></button>
+                  <button class="text-xs text-slate-400 hover:text-red-500 transition"><i class="ri-forbid-line"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="user-row" data-role="instructor">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=P+S&background=4f46e5&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Prof. Pomona Sprout</p>
+                    <p class="text-xs text-slate-400">p.sprout@edu.ac</p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><span class="text-xs bg-violet-50 text-violet-600 font-medium px-2 py-0.5 rounded-full">Instructor</span></td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Sep 3, 2025</p></td>
+              <td class="py-3 pr-4"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Active</span></td>
+              <td class="py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="text-xs text-slate-400 hover:text-primary-600 transition"><i class="ri-edit-line"></i></button>
+                  <button class="text-xs text-slate-400 hover:text-red-500 transition"><i class="ri-forbid-line"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="user-row" data-role="student">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=R+W&background=10b981&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Ron Weasley</p>
+                    <p class="text-xs text-slate-400">ron@edu.ac</p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><span class="text-xs bg-primary-50 text-primary-600 font-medium px-2 py-0.5 rounded-full">Student</span></td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Jan 14, 2026</p></td>
+              <td class="py-3 pr-4"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Active</span></td>
+              <td class="py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="text-xs text-slate-400 hover:text-primary-600 transition"><i class="ri-edit-line"></i></button>
+                  <button class="text-xs text-slate-400 hover:text-red-500 transition"><i class="ri-forbid-line"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="user-row" data-role="instructor">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=S+S&background=7c3aed&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Prof. Severus Snape</p>
+                    <p class="text-xs text-slate-400">s.snape@edu.ac</p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><span class="text-xs bg-violet-50 text-violet-600 font-medium px-2 py-0.5 rounded-full">Instructor</span></td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Aug 28, 2025</p></td>
+              <td class="py-3 pr-4"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Active</span></td>
+              <td class="py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="text-xs text-slate-400 hover:text-primary-600 transition"><i class="ri-edit-line"></i></button>
+                  <button class="text-xs text-slate-400 hover:text-red-500 transition"><i class="ri-forbid-line"></i></button>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="user-row" data-role="student">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=H+P&background=f59e0b&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Harry Potter</p>
+                    <p class="text-xs text-slate-400">harry@edu.ac</p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><span class="text-xs bg-primary-50 text-primary-600 font-medium px-2 py-0.5 rounded-full">Student</span></td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Jan 10, 2026</p></td>
+              <td class="py-3 pr-4"><span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span></td>
+              <td class="py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button class="text-xs text-slate-400 hover:text-primary-600 transition"><i class="ri-edit-line"></i></button>
+                  <button class="text-xs text-slate-400 hover:text-red-500 transition"><i class="ri-forbid-line"></i></button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COURSE OVERVIEW TABLE -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-800 text-base">Course Overview</h2>
+        <a href="{% url 'courses' %}" class="text-xs text-primary-500 font-medium hover:text-primary-600 flex items-center gap-1 transition">
+          View all <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-xs text-slate-400 font-semibold uppercase tracking-wide border-b border-slate-100">
+              <th class="text-left pb-3 pr-4">Course</th>
+              <th class="text-left pb-3 pr-4">Instructor</th>
+              <th class="text-left pb-3 pr-4">Students</th>
+              <th class="text-left pb-3 pr-4">Completion</th>
+              <th class="text-left pb-3">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+
+            <tr class="course-row">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="ri-code-s-slash-line text-indigo-600 text-sm"></i>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-700">Algorithms 101</p>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Prof. Sprout</p></td>
+              <td class="py-3 pr-4"><p class="text-xs font-semibold text-slate-700">84</p></td>
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-indigo-400 rounded-full" style="width:42%"></div>
+                  </div>
+                  <span class="text-xs text-slate-500">42%</span>
+                </div>
+              </td>
+              <td class="py-3"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Published</span></td>
+            </tr>
+
+            <tr class="course-row">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="ri-database-2-line text-violet-600 text-sm"></i>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-700">Introduction to Database</p>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Prof. Snape</p></td>
+              <td class="py-3 pr-4"><p class="text-xs font-semibold text-slate-700">96</p></td>
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-violet-400 rounded-full" style="width:58%"></div>
+                  </div>
+                  <span class="text-xs text-slate-500">58%</span>
+                </div>
+              </td>
+              <td class="py-3"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Published</span></td>
+            </tr>
+
+            <tr class="course-row">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="ri-pie-chart-line text-emerald-600 text-sm"></i>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-700">Basic Mathematics</p>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-500">Prof. Umbridge</p></td>
+              <td class="py-3 pr-4"><p class="text-xs font-semibold text-slate-700">62</p></td>
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-400 rounded-full" style="width:81%"></div>
+                  </div>
+                  <span class="text-xs text-slate-500">81%</span>
+                </div>
+              </td>
+              <td class="py-3"><span class="badge-active text-xs font-semibold px-2 py-0.5 rounded-full">Published</span></td>
+            </tr>
+
+            <tr class="course-row">
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="ri-computer-line text-slate-400 text-sm"></i>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-500">Human Computer Interaction</p>
+                </div>
+              </td>
+              <td class="py-3 pr-4"><p class="text-xs text-slate-400">Prof. Flitwick</p></td>
+              <td class="py-3 pr-4"><p class="text-xs font-semibold text-slate-400">—</p></td>
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"></div>
+                  <span class="text-xs text-slate-400">—</span>
+                </div>
+              </td>
+              <td class="py-3"><span class="badge-inactive text-xs font-semibold px-2 py-0.5 rounded-full">Draft</span></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───── RIGHT (1/3) ───── -->
+  <div class="space-y-6">
+
+    <!-- USER DISTRIBUTION DONUT -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h2 class="font-semibold text-slate-800 text-base mb-4">User Distribution</h2>
+      <div class="flex items-center gap-5">
+        <div class="donut flex-shrink-0"></div>
+        <div class="space-y-2.5 flex-1">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-sm bg-primary-500 flex-shrink-0"></span>
+              <span class="text-xs text-slate-600">Students</span>
+            </div>
+            <span class="text-xs font-semibold text-slate-700">2,358 <span class="text-slate-400 font-normal">(97%)</span></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-sm bg-primary-300 flex-shrink-0"></span>
+              <span class="text-xs text-slate-600">Instructors</span>
+            </div>
+            <span class="text-xs font-semibold text-slate-700">48 <span class="text-slate-400 font-normal">(2%)</span></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-sm bg-primary-200 flex-shrink-0"></span>
+              <span class="text-xs text-slate-600">Admins</span>
+            </div>
+            <span class="text-xs font-semibold text-slate-700">12 <span class="text-slate-400 font-normal">(0.5%)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTRATION TREND (sparkline bars) -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="font-semibold text-slate-800 text-base">New Registrations</h2>
+        <span class="text-xs text-slate-400">Last 7 days</span>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">Daily sign-ups across all roles</p>
+      <div class="flex items-end justify-between gap-1.5 h-20">
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-slate-500">4</span>
+          <div class="spark-bar w-full bg-primary-200 rounded-t-sm" style="height:44%"></div>
+          <span class="text-xs text-slate-400">S</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-slate-500">2</span>
+          <div class="spark-bar w-full bg-primary-200 rounded-t-sm" style="height:22%"></div>
+          <span class="text-xs text-slate-400">M</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-slate-500">7</span>
+          <div class="spark-bar w-full bg-primary-300 rounded-t-sm" style="height:66%"></div>
+          <span class="text-xs text-slate-400">T</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-slate-500">5</span>
+          <div class="spark-bar w-full bg-primary-300 rounded-t-sm" style="height:55%"></div>
+          <span class="text-xs text-slate-400">W</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-slate-500">9</span>
+          <div class="spark-bar w-full bg-primary-500 rounded-t-sm" style="height:100%"></div>
+          <span class="text-xs text-slate-400">T</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-slate-500">6</span>
+          <div class="spark-bar w-full bg-primary-300 rounded-t-sm" style="height:66%"></div>
+          <span class="text-xs text-slate-400">F</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 flex-1">
+          <span class="text-xs text-primary-600 font-semibold">3</span>
+          <div class="spark-bar w-full bg-primary-100 rounded-t-sm border-2 border-dashed border-primary-300" style="height:33%"></div>
+          <span class="text-xs text-primary-500 font-medium">S</span>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+        +24 new users this week
+      </p>
+    </div>
+
+    <!-- SYSTEM STATUS -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h2 class="font-semibold text-slate-800 text-base mb-4">System Status</h2>
+      <div class="space-y-3">
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="text-xs text-slate-600">Web server</span>
+          </div>
+          <span class="text-xs font-semibold text-emerald-600">Operational</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="text-xs text-slate-600">Database</span>
+          </div>
+          <span class="text-xs font-semibold text-emerald-600">Operational</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="text-xs text-slate-600">File storage</span>
+          </div>
+          <span class="text-xs font-semibold text-emerald-600">Operational</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+            <span class="text-xs text-slate-600">Email service</span>
+          </div>
+          <span class="text-xs font-semibold text-amber-500">Degraded</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="text-xs text-slate-600">Auth service</span>
+          </div>
+          <span class="text-xs font-semibold text-emerald-600">Operational</span>
+        </div>
+
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500">Overall uptime</span>
+          <span class="text-xs font-bold text-emerald-600">99.8%</span>
+        </div>
+        <div class="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full bg-emerald-400 rounded-full" style="width:99.8%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h2 class="font-semibold text-slate-800 text-base mb-4">Quick Actions</h2>
+      <div class="grid grid-cols-2 gap-2.5">
+        <a href="{% url 'admin:auth_user_changelist' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-primary-50 hover:bg-primary-100 transition text-center">
+          <i class="ri-group-line text-primary-600 text-xl"></i>
+          <span class="text-xs font-medium text-primary-700">Manage Users</span>
+        </a>
+        <a href="{% url 'courses' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 transition text-center">
+          <i class="ri-book-open-line text-violet-600 text-xl"></i>
+          <span class="text-xs font-medium text-violet-700">All Courses</span>
+        </a>
+        <a href="{% url 'announcements' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition text-center">
+          <i class="ri-megaphone-line text-amber-500 text-xl"></i>
+          <span class="text-xs font-medium text-amber-700">Announce</span>
+        </a>
+        <a href="{% url 'admin:index' %}"
+           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition text-center">
+          <i class="ri-settings-3-line text-slate-600 text-xl"></i>
+          <span class="text-xs font-medium text-slate-700">Site Settings</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+  <!-- end right col -->
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  // Greeting by time
+  const hour = new Date().getHours();
+  const greetEl = document.getElementById('greeting-time');
+  if (greetEl) {
+    if (hour < 12)      greetEl.textContent = 'Good morning,';
+    else if (hour < 17) greetEl.textContent = 'Good afternoon,';
+    else                greetEl.textContent = 'Good evening,';
+  }
+
+  // Filter users table by role
+  function filterUsers(role) {
+    document.querySelectorAll('#users-table tbody tr').forEach(row => {
+      if (role === 'all' || row.dataset.role === role) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      }
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

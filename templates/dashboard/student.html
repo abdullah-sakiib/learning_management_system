@@ -1,0 +1,584 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — EduFlow{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ display_name }}! 👋{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block user_name %}{{ display_name }}{% endblock %}
+{% block user_role %}Student{% endblock %}
+{% block topbar_user %}{{ display_name }}{% endblock %}
+{% block topbar_role %}Student{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Stat card gradient borders */
+  .stat-card {
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(99,102,241,0.10);
+  }
+
+  /* Course progress card */
+  .course-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .course-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+  }
+
+  /* Circular progress */
+  .circle-progress {
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
+  /* Assignment urgency badge */
+  .badge-urgent   { background:#fef2f2; color:#ef4444; }
+  .badge-soon     { background:#fffbeb; color:#f59e0b; }
+  .badge-normal   { background:#f0fdf4; color:#22c55e; }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* Activity dot */
+  .activity-dot::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════
+     GREETING + QUICK STATS ROW
+════════════════════════════════════════ -->
+<div class="mb-6 reveal">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- Stat: Enrolled Courses -->
+    <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
+          <i class="ri-book-open-line text-primary-600 text-lg"></i>
+        </div>
+        <span class="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">+2 new</span>
+      </div>
+      <p class="text-2xl font-bold text-slate-800 mb-0.5">6</p>
+      <p class="text-xs text-slate-500">Enrolled courses</p>
+    </div>
+
+    <!-- Stat: Assignments Due -->
+    <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+          <i class="ri-file-list-3-line text-amber-500 text-lg"></i>
+        </div>
+        <span class="text-xs font-semibold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">3 pending</span>
+      </div>
+      <p class="text-2xl font-bold text-slate-800 mb-0.5">3</p>
+      <p class="text-xs text-slate-500">Assignments due</p>
+    </div>
+
+    <!-- Stat: GPA -->
+    <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+          <i class="ri-bar-chart-box-line text-violet-500 text-lg"></i>
+        </div>
+        <span class="text-xs font-semibold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full">↑ 0.2</span>
+      </div>
+      <p class="text-2xl font-bold text-slate-800 mb-0.5">3.8</p>
+      <p class="text-xs text-slate-500">Current GPA</p>
+    </div>
+
+    <!-- Stat: Completion -->
+    <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+          <i class="ri-trophy-line text-emerald-500 text-lg"></i>
+        </div>
+        <span class="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">On track</span>
+      </div>
+      <p class="text-2xl font-bold text-slate-800 mb-0.5">67%</p>
+      <p class="text-xs text-slate-500">Avg. completion</p>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     MAIN GRID: Left (courses + schedule) | Right (assignments + activity)
+════════════════════════════════════════ -->
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── LEFT COL (2/3) ───── -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- TODAY'S SCHEDULE -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-800 text-base">Today's Schedule</h2>
+        <span class="text-xs text-slate-400" id="today-date"></span>
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-3">
+
+        <!-- Schedule Card 1 -->
+        <div class="bg-primary-50 border border-primary-100 rounded-xl p-4 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-primary-500 rounded-r"></div>
+          <div class="pl-1">
+            <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center mb-2.5">
+              <i class="ri-code-s-slash-line text-primary-600 text-sm"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-800 leading-snug">Algorithms 101</p>
+            <p class="text-xs text-slate-500 mt-0.5">Prof. Pomona Sprout</p>
+            <div class="flex items-center justify-between mt-3">
+              <span class="text-xs text-primary-600 font-medium bg-primary-100 px-2 py-0.5 rounded-full">Week 4 of 14</span>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Progress</span><span class="font-medium text-primary-600">35%</span>
+              </div>
+              <div class="h-1.5 bg-primary-100 rounded-full overflow-hidden">
+                <div class="h-full bg-primary-500 rounded-full" style="width:35%"></div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-2.5 flex items-center gap-1">
+              <i class="ri-time-line"></i> Today at 8:00 AM
+            </p>
+          </div>
+        </div>
+
+        <!-- Schedule Card 2 -->
+        <div class="bg-violet-50 border border-violet-100 rounded-xl p-4 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-violet-500 rounded-r"></div>
+          <div class="pl-1">
+            <div class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center mb-2.5">
+              <i class="ri-database-2-line text-violet-600 text-sm"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-800 leading-snug">Intro to Database</p>
+            <p class="text-xs text-slate-500 mt-0.5">Prof. Severus Snape</p>
+            <div class="flex items-center justify-between mt-3">
+              <span class="text-xs text-violet-600 font-medium bg-violet-100 px-2 py-0.5 rounded-full">Week 4 of 14</span>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Progress</span><span class="font-medium text-violet-600">35%</span>
+              </div>
+              <div class="h-1.5 bg-violet-100 rounded-full overflow-hidden">
+                <div class="h-full bg-violet-500 rounded-full" style="width:35%"></div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-2.5 flex items-center gap-1">
+              <i class="ri-time-line"></i> Today at 10:00 AM
+            </p>
+          </div>
+        </div>
+
+        <!-- Schedule Card 3 -->
+        <div class="bg-sky-50 border border-sky-100 rounded-xl p-4 relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-1 h-full bg-sky-500 rounded-r"></div>
+          <div class="pl-1">
+            <div class="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center mb-2.5">
+              <i class="ri-computer-line text-sky-600 text-sm"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-800 leading-snug">Computer Networks</p>
+            <p class="text-xs text-slate-500 mt-0.5">Prof. Minerva McGonagall</p>
+            <div class="flex items-center justify-between mt-3">
+              <span class="text-xs text-sky-600 font-medium bg-sky-100 px-2 py-0.5 rounded-full">Week 4 of 14</span>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Progress</span><span class="font-medium text-sky-600">60%</span>
+              </div>
+              <div class="h-1.5 bg-sky-100 rounded-full overflow-hidden">
+                <div class="h-full bg-sky-500 rounded-full" style="width:60%"></div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-2.5 flex items-center gap-1">
+              <i class="ri-time-line"></i> Today at 2:00 PM
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MY COURSES -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-800 text-base">My Courses</h2>
+        <a href="{% url 'courses' %}" class="text-xs text-primary-500 font-medium hover:text-primary-600 flex items-center gap-1 transition">
+          View all <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+
+      <!-- Tab switcher -->
+      <div class="flex items-center gap-1 bg-slate-50 rounded-xl p-1 mb-4 w-fit">
+        <button onclick="switchTab('list')" id="tab-list"
+          class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition bg-white text-slate-800 shadow-sm">
+          Courses
+        </button>
+        <button onclick="switchTab('grid')" id="tab-grid"
+          class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-slate-500 hover:text-slate-700">
+          Timeline
+        </button>
+      </div>
+
+      <!-- Course list view -->
+      <div id="view-list" class="space-y-3">
+
+        {% for course in courses %}
+        <div class="course-card flex items-center gap-4 p-3.5 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer"
+             onclick="window.location='{% url 'course_detail' course.id %}'">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 {{ course.bg_class }}">
+            <i class="{{ course.icon }} text-lg {{ course.icon_color }}"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-800 truncate">{{ course.name }}</p>
+              <span class="text-xs font-medium flex-shrink-0 {{ course.day_color }}">{{ course.day }}</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">{{ course.instructor }}</p>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full {{ course.bar_color }}" style="width:{{ course.progress }}%"></div>
+              </div>
+              <span class="text-xs text-slate-500 font-medium flex-shrink-0">{{ course.progress }}%</span>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+        </div>
+        {% empty %}
+        <!-- Static fallback for frontend preview -->
+        <div class="course-card flex items-center gap-4 p-3.5 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-indigo-50">
+            <i class="ri-code-s-slash-line text-lg text-indigo-600"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-800 truncate">Algorithms 101</p>
+              <span class="text-xs font-medium flex-shrink-0 text-amber-500">Tuesday</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">Prof. Pomona Sprout</p>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-indigo-400" style="width:35%"></div>
+              </div>
+              <span class="text-xs text-slate-500 font-medium flex-shrink-0">35%</span>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+        </div>
+
+        <div class="course-card flex items-center gap-4 p-3.5 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-violet-50">
+            <i class="ri-database-2-line text-lg text-violet-600"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-800 truncate">Introduction to Database</p>
+              <span class="text-xs font-medium flex-shrink-0 text-amber-500">Tuesday</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">Prof. Severus Snape</p>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-violet-400" style="width:55%"></div>
+              </div>
+              <span class="text-xs text-slate-500 font-medium flex-shrink-0">55%</span>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+        </div>
+
+        <div class="course-card flex items-center gap-4 p-3.5 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-emerald-50">
+            <i class="ri-pie-chart-line text-lg text-emerald-600"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-800 truncate">Basic Mathematics</p>
+              <span class="text-xs font-medium flex-shrink-0 text-blue-500">Monday</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">Prof. Dolores Umbridge</p>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-emerald-400" style="width:80%"></div>
+              </div>
+              <span class="text-xs text-slate-500 font-medium flex-shrink-0">80%</span>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+        </div>
+
+        <div class="course-card flex items-center gap-4 p-3.5 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-rose-50">
+            <i class="ri-computer-line text-lg text-rose-600"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-800 truncate">Human Computer Interaction</p>
+              <span class="text-xs font-medium flex-shrink-0 text-green-500">Wednesday</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">Prof. Filius Flitwick</p>
+            <div class="flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-rose-400" style="width:45%"></div>
+              </div>
+              <span class="text-xs text-slate-500 font-medium flex-shrink-0">45%</span>
+            </div>
+          </div>
+          <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+        </div>
+
+        {% endfor %}
+      </div>
+
+      <!-- Timeline / grid view (hidden by default) -->
+      <div id="view-grid" class="hidden">
+        <div class="space-y-2">
+          <div class="flex items-center gap-3 text-xs text-slate-500 font-medium border-b border-slate-100 pb-2 mb-3">
+            <span class="w-32 flex-shrink-0">Course</span>
+            <span class="flex-1">Week progress</span>
+            <span class="w-12 text-right">Week</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-32 flex-shrink-0 text-xs font-medium text-slate-700 truncate">Algorithms 101</span>
+            <div class="flex-1 flex gap-0.5">
+              {% for i in "12345678901234" %}
+              <div class="flex-1 h-4 rounded-sm {% if forloop.counter <= 4 %}bg-primary-400{% else %}bg-slate-100{% endif %}"></div>
+              {% endfor %}
+            </div>
+            <span class="w-12 text-right text-xs text-slate-500">4 / 14</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-32 flex-shrink-0 text-xs font-medium text-slate-700 truncate">Intro Database</span>
+            <div class="flex-1 flex gap-0.5">
+              {% for i in "12345678901234" %}
+              <div class="flex-1 h-4 rounded-sm {% if forloop.counter <= 8 %}bg-violet-400{% else %}bg-slate-100{% endif %}"></div>
+              {% endfor %}
+            </div>
+            <span class="w-12 text-right text-xs text-slate-500">8 / 14</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-32 flex-shrink-0 text-xs font-medium text-slate-700 truncate">Basic Mathematics</span>
+            <div class="flex-1 flex gap-0.5">
+              {% for i in "123456789012" %}
+              <div class="flex-1 h-4 rounded-sm {% if forloop.counter <= 11 %}bg-emerald-400{% else %}bg-slate-100{% endif %}"></div>
+              {% endfor %}
+            </div>
+            <span class="w-12 text-right text-xs text-slate-500">11 / 12</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-32 flex-shrink-0 text-xs font-medium text-slate-700 truncate">HCI</span>
+            <div class="flex-1 flex gap-0.5">
+              {% for i in "12345678901234" %}
+              <div class="flex-1 h-4 rounded-sm {% if forloop.counter <= 6 %}bg-rose-400{% else %}bg-slate-100{% endif %}"></div>
+              {% endfor %}
+            </div>
+            <span class="w-12 text-right text-xs text-slate-500">6 / 14</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ───── RIGHT COL (1/3) ───── -->
+  <div class="space-y-6">
+
+    <!-- MOTIVATIONAL BANNER -->
+    <div class="bg-gradient-to-br from-primary-600 to-indigo-700 rounded-2xl p-5 relative overflow-hidden reveal">
+      <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full"></div>
+      <div class="absolute -right-2 bottom-2 w-14 h-14 bg-white/5 rounded-full"></div>
+      <i class="ri-lightbulb-flash-line text-4xl text-white/20 absolute right-5 top-1/2 -translate-y-1/2"></i>
+      <div class="relative z-10">
+        <p class="text-xs font-semibold text-primary-200 uppercase tracking-wide mb-1">Keep it up!</p>
+        <p class="text-white font-semibold text-sm leading-snug">You're ahead of 68% of your classmates this week.</p>
+        <a href="{% url 'courses' %}" class="inline-flex items-center gap-1 mt-3 text-xs font-medium text-white bg-white/15 hover:bg-white/20 transition px-3 py-1.5 rounded-lg">
+          Continue learning <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- UPCOMING ASSIGNMENTS -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-800 text-base">Upcoming Assignments</h2>
+        <a href="{% url 'assignments' %}" class="text-xs text-primary-500 font-medium hover:text-primary-600 flex items-center gap-1 transition">
+          View all <i class="ri-arrow-right-line"></i>
+        </a>
+      </div>
+
+      <div class="space-y-3">
+
+        <!-- Assignment 1: Urgent -->
+        <div class="p-3.5 rounded-xl border border-red-100 bg-red-50/50 hover:border-red-200 transition cursor-pointer"
+             onclick="window.location='{% url 'assignments' %}'">
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <p class="text-sm font-semibold text-slate-800 leading-snug">Paper on HCI Book by Alan Dix</p>
+            <i class="ri-alarm-warning-line text-red-400 text-base flex-shrink-0 mt-0.5"></i>
+          </div>
+          <p class="text-xs text-slate-500 mb-2">Human Computer Interaction</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400 flex items-center gap-1">
+              <i class="ri-calendar-line"></i> Due Sept 25
+            </span>
+            <span class="text-xs font-bold text-red-500 badge-urgent px-2 py-0.5 rounded-full">1 day left</span>
+          </div>
+        </div>
+
+        <!-- Assignment 2: Soon -->
+        <div class="p-3.5 rounded-xl border border-amber-100 bg-amber-50/50 hover:border-amber-200 transition cursor-pointer"
+             onclick="window.location='{% url 'assignments' %}'">
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <p class="text-sm font-semibold text-slate-800 leading-snug">Database Normalization Exercise</p>
+            <i class="ri-time-line text-amber-400 text-base flex-shrink-0 mt-0.5"></i>
+          </div>
+          <p class="text-xs text-slate-500 mb-2">Introduction to Database</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400 flex items-center gap-1">
+              <i class="ri-calendar-line"></i> Due Sept 26
+            </span>
+            <span class="text-xs font-bold text-amber-500 badge-soon px-2 py-0.5 rounded-full">2 days left</span>
+          </div>
+        </div>
+
+        <!-- Assignment 3: Normal -->
+        <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:border-primary-100 transition cursor-pointer"
+             onclick="window.location='{% url 'assignments' %}'">
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <p class="text-sm font-semibold text-slate-800 leading-snug">Quiz: Algorithms 101</p>
+            <i class="ri-questionnaire-line text-emerald-400 text-base flex-shrink-0 mt-0.5"></i>
+          </div>
+          <p class="text-xs text-slate-500 mb-2">Algorithms 101</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400 flex items-center gap-1">
+              <i class="ri-calendar-line"></i> Due Sept 29
+            </span>
+            <span class="text-xs font-bold text-emerald-500 badge-normal px-2 py-0.5 rounded-full">4 days left</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RECENT ACTIVITY -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-800 text-base">Recent Activity</h2>
+      </div>
+
+      <div class="space-y-0 relative">
+        <!-- Timeline line -->
+        <div class="absolute left-[15px] top-4 bottom-4 w-px bg-slate-100"></div>
+
+        <!-- Activity 1 -->
+        <div class="flex gap-3 pb-4 relative">
+          <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 z-10">
+            <i class="ri-checkbox-circle-line text-emerald-500 text-sm"></i>
+          </div>
+          <div class="flex-1 pt-1">
+            <p class="text-sm font-medium text-slate-700 leading-snug">Graded: Week 4 Assignment Human Computer Interaction — <span class="text-emerald-600 font-semibold">92/100</span></p>
+            <p class="text-xs text-slate-400 mt-0.5">2 hours ago</p>
+          </div>
+        </div>
+
+        <!-- Activity 2 -->
+        <div class="flex gap-3 pb-4 relative">
+          <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 z-10">
+            <i class="ri-file-add-line text-primary-500 text-sm"></i>
+          </div>
+          <div class="flex-1 pt-1">
+            <p class="text-sm font-medium text-slate-700 leading-snug">New Assignment: Week 5 Introduction to Database</p>
+            <p class="text-xs text-slate-400 mt-0.5">5 hours ago</p>
+          </div>
+        </div>
+
+        <!-- Activity 3 -->
+        <div class="flex gap-3 relative">
+          <div class="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 z-10">
+            <i class="ri-upload-2-line text-violet-500 text-sm"></i>
+          </div>
+          <div class="flex-1 pt-1">
+            <p class="text-sm font-medium text-slate-700 leading-snug">Submitted: Week 3 Paper — Algorithms 101</p>
+            <p class="text-xs text-slate-400 mt-0.5">2 hours ago</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  <!-- end right col -->
+
+</div>
+<!-- end main grid -->
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  // Set today's date
+  const dateEl = document.getElementById('today-date');
+  if (dateEl) {
+    dateEl.textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
+    });
+  }
+
+  // Tab switcher
+  function switchTab(tab) {
+    const listView = document.getElementById('view-list');
+    const gridView = document.getElementById('view-grid');
+    const btnList  = document.getElementById('tab-list');
+    const btnGrid  = document.getElementById('tab-grid');
+
+    if (tab === 'list') {
+      listView.classList.remove('hidden');
+      gridView.classList.add('hidden');
+      btnList.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+      btnList.classList.remove('text-slate-500');
+      btnGrid.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+      btnGrid.classList.add('text-slate-500');
+    } else {
+      gridView.classList.remove('hidden');
+      listView.classList.add('hidden');
+      btnGrid.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+      btnGrid.classList.remove('text-slate-500');
+      btnList.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+      btnList.classList.add('text-slate-500');
+    }
+  }
+
+  // Reveal on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      }
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

@@ -1,0 +1,444 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title|default:"Algorithms 101" }} — EduFlow{% endblock %}
+{% block page_title %}{{ course.title|default:"Algorithms 101" }}{% endblock %}
+{% block page_subtitle %}Course details and overview{% endblock %}
+{% block nav_courses %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .module-item { transition: background 0.2s ease; }
+  .module-item:hover { background: #f8f7ff; }
+
+  .tab-btn { transition: all 0.2s ease; }
+  .tab-btn.active {
+    color: #4f46e5;
+    border-bottom: 2px solid #4f46e5;
+  }
+
+  .btn-enroll {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.35);
+    transition: all 0.25s ease;
+  }
+  .btn-enroll:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(99,102,241,0.45);
+  }
+
+  .module-toggle { transition: transform 0.3s ease; }
+  .module-toggle.open { transform: rotate(180deg); }
+
+  .module-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .module-body.open { max-height: 600px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-xs text-slate-400 mb-5 reveal">
+  <a href="{% url 'courses' %}" class="hover:text-primary-600 transition">Courses</a>
+  <i class="ri-arrow-right-s-line"></i>
+  <span class="text-slate-600 font-medium">{{ course.title|default:"Algorithms 101" }}</span>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── LEFT: Main content ───── -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- COURSE HERO -->
+    <div class="bg-gradient-to-br from-indigo-600 via-indigo-500 to-primary-600 rounded-2xl p-7 relative overflow-hidden reveal">
+      <div class="absolute inset-0 opacity-10"
+           style="background-image:radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px); background-size:20px 20px;"></div>
+      <i class="ri-code-s-slash-line text-white/10 text-[120px] absolute -right-4 -bottom-6 leading-none"></i>
+      <div class="relative z-10">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <span class="text-xs font-semibold bg-white/15 text-white px-3 py-1 rounded-full">Computer Science</span>
+          <span class="text-xs font-semibold bg-white/15 text-white px-3 py-1 rounded-full">Intermediate</span>
+          <span class="text-xs font-semibold bg-emerald-400/80 text-white px-3 py-1 rounded-full flex items-center gap-1">
+            <i class="ri-checkbox-circle-line"></i> Enrolled
+          </span>
+        </div>
+        <h1 class="font-bold text-white text-2xl mb-2">{{ course.title|default:"Algorithms 101" }}</h1>
+        <p class="text-indigo-200 text-sm leading-relaxed max-w-lg">
+          {{ course.description|default:"A comprehensive introduction to algorithmic thinking, data structures, and computational complexity. Essential foundation for any CS student." }}
+        </p>
+        <div class="flex flex-wrap items-center gap-4 mt-4 text-sm text-indigo-200">
+          <span class="flex items-center gap-1.5"><i class="ri-time-line"></i> {{ course.duration_weeks|default:14 }} weeks</span>
+          <span class="flex items-center gap-1.5"><i class="ri-group-line"></i> {{ course.enrollments.count }} students</span>
+          <span class="flex items-center gap-1.5"><i class="ri-book-2-line"></i> {{ course.lecture_count|default:12 }} lectures</span>
+          <span class="flex items-center gap-1.5">
+            <i class="ri-star-fill text-amber-300"></i> {{ course.rating|default:"4.8" }} rating
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS BAR (enrolled students only) -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h3 class="font-semibold text-slate-800 text-sm">Your Progress</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Week 4 of 14 · Keep it up!</p>
+        </div>
+        <span class="text-2xl font-bold text-primary-600">{{ enrollment.progress|default:0 }}%</span>
+      </div>
+      <div class="h-3 bg-slate-100 rounded-full overflow-hidden mb-3">
+        <div class="h-full bg-gradient-to-r from-primary-500 to-indigo-400 rounded-full transition-all duration-700" style="width:{{ enrollment.progress|default:0 }}%"></div>
+      </div>
+      <div class="flex items-center justify-between text-xs text-slate-500">
+        <span>{{ enrollment.progress|default:0 }}% completed</span>
+        <a href="{% url 'course_content' course.id %}"
+           class="btn-enroll inline-flex items-center gap-1.5 text-white font-semibold text-xs px-4 py-2 rounded-xl">
+          <i class="ri-play-circle-line"></i> Continue learning
+        </a>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal">
+      <!-- Tab nav -->
+      <div class="flex items-center border-b border-slate-100 px-5 gap-1">
+        <button onclick="showTab('overview')" id="tab-overview"
+          class="tab-btn active text-sm font-medium text-slate-600 px-3 py-4 border-b-2 border-transparent">Overview</button>
+        <button onclick="showTab('modules')" id="tab-modules"
+          class="tab-btn text-sm font-medium text-slate-500 px-3 py-4 border-b-2 border-transparent hover:text-slate-700">Modules</button>
+        <button onclick="showTab('instructor')" id="tab-instructor"
+          class="tab-btn text-sm font-medium text-slate-500 px-3 py-4 border-b-2 border-transparent hover:text-slate-700">Instructor</button>
+        <button onclick="showTab('reviews')" id="tab-reviews"
+          class="tab-btn text-sm font-medium text-slate-500 px-3 py-4 border-b-2 border-transparent hover:text-slate-700">Reviews</button>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div id="panel-overview" class="p-6">
+        <h3 class="font-semibold text-slate-800 mb-3">About this course</h3>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+          This course introduces the fundamental concepts of algorithm design, analysis, and implementation. Students will learn to evaluate algorithm efficiency using Big-O notation and implement classic algorithms including sorting, searching, and graph traversal.
+        </p>
+        <h4 class="font-semibold text-slate-800 text-sm mb-2">What you'll learn</h4>
+        <div class="grid sm:grid-cols-2 gap-2 mb-4">
+          {% for item in "12345678" %}
+          <div class="flex items-start gap-2">
+            <i class="ri-checkbox-circle-fill text-primary-500 text-sm mt-0.5 flex-shrink-0"></i>
+            <span class="text-xs text-slate-600">
+              {% if forloop.counter == 1 %}Algorithm analysis and Big-O notation
+              {% elif forloop.counter == 2 %}Sorting algorithms (merge, quick, heap)
+              {% elif forloop.counter == 3 %}Dynamic programming techniques
+              {% elif forloop.counter == 4 %}Graph traversal (BFS & DFS)
+              {% elif forloop.counter == 5 %}Tree data structures and operations
+              {% elif forloop.counter == 6 %}Greedy algorithms and applications
+              {% elif forloop.counter == 7 %}Divide and conquer strategies
+              {% else %}NP-completeness and reductions{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        <h4 class="font-semibold text-slate-800 text-sm mb-2">Prerequisites</h4>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg">Basic Mathematics</span>
+          <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg">Intro to Programming</span>
+          <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg">Python or C++ basics</span>
+        </div>
+      </div>
+
+      <!-- MODULES -->
+      <div id="panel-modules" class="p-6 hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-slate-800">Course Modules</h3>
+          <span class="text-xs text-slate-400">12 lectures · 14 weeks</span>
+        </div>
+        <div class="space-y-2">
+          {% for i in "123456789012" %}
+          <div class="border border-slate-100 rounded-xl overflow-hidden">
+            <button onclick="toggleModule(this)"
+              class="w-full flex items-center gap-3 p-3.5 hover:bg-slate-50 transition text-left">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0
+                {% if forloop.counter <= 4 %}bg-primary-500{% else %}bg-slate-100{% endif %}">
+                {% if forloop.counter <= 4 %}
+                <i class="ri-check-line text-white text-xs"></i>
+                {% else %}
+                <span class="text-xs font-bold text-slate-500">{{ forloop.counter }}</span>
+                {% endif %}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-slate-700 truncate">
+                  Week {{ forloop.counter }}:
+                  {% if forloop.counter == 1 %}Introduction to Algorithms
+                  {% elif forloop.counter == 2 %}Arrays and Linked Lists
+                  {% elif forloop.counter == 3 %}Recursion and Backtracking
+                  {% elif forloop.counter == 4 %}Sorting Algorithms
+                  {% elif forloop.counter == 5 %}Searching Algorithms
+                  {% elif forloop.counter == 6 %}Trees and Binary Trees
+                  {% elif forloop.counter == 7 %}Heaps and Priority Queues
+                  {% elif forloop.counter == 8 %}Graphs — Part 1
+                  {% elif forloop.counter == 9 %}Graphs — Part 2 (Shortest paths)
+                  {% elif forloop.counter == 10 %}Dynamic Programming
+                  {% elif forloop.counter == 11 %}Greedy Algorithms
+                  {% else %}NP Problems & Review{% endif %}
+                </p>
+                <p class="text-xs text-slate-400">
+                  {% if forloop.counter <= 4 %}Completed{% else %}{{ forloop.counter|add:"-1" }} materials · quiz{% endif %}
+                </p>
+              </div>
+              <i class="ri-arrow-down-s-line module-toggle text-slate-400 flex-shrink-0"></i>
+            </button>
+            <div class="module-body">
+              <div class="border-t border-slate-100 divide-y divide-slate-50">
+                <div class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition cursor-pointer">
+                  <i class="ri-play-circle-line text-primary-500 text-sm flex-shrink-0"></i>
+                  <span class="text-xs text-slate-600 flex-1">Lecture video</span>
+                  <span class="text-xs text-slate-400">~45 min</span>
+                </div>
+                <div class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition cursor-pointer">
+                  <i class="ri-file-pdf-line text-red-400 text-sm flex-shrink-0"></i>
+                  <span class="text-xs text-slate-600 flex-1">Lecture notes PDF</span>
+                  <span class="text-xs text-slate-400">Download</span>
+                </div>
+                <div class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition cursor-pointer">
+                  <i class="ri-questionnaire-line text-amber-500 text-sm flex-shrink-0"></i>
+                  <span class="text-xs text-slate-600 flex-1">Weekly quiz</span>
+                  <span class="text-xs {% if forloop.counter <= 4 %}text-emerald-500 font-semibold{% else %}text-slate-400{% endif %}">
+                    {% if forloop.counter <= 4 %}Completed{% else %}Pending{% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- INSTRUCTOR -->
+      <div id="panel-instructor" class="p-6 hidden">
+        <div class="flex items-start gap-4">
+          <img src="https://ui-avatars.com/api/?name=P+S&background=4f46e5&color=fff&size=96"
+               class="w-16 h-16 rounded-2xl object-cover flex-shrink-0"/>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">Prof. Pomona Sprout</h3>
+            <p class="text-xs text-primary-600 font-medium mb-2">Senior Lecturer · Computer Science Dept.</p>
+            <div class="flex flex-wrap gap-3 text-xs text-slate-500 mb-3">
+              <span class="flex items-center gap-1"><i class="ri-book-open-line text-primary-500"></i> 4 courses</span>
+              <span class="flex items-center gap-1"><i class="ri-group-line text-primary-500"></i> 284 students</span>
+              <span class="flex items-center gap-1"><i class="ri-star-fill text-amber-400"></i> 4.8 avg. rating</span>
+            </div>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Prof. Sprout has over 15 years of experience teaching computer science. Her research focuses on algorithm optimization and computational complexity theory. She has published 12 papers in leading journals.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- REVIEWS -->
+      <div id="panel-reviews" class="p-6 hidden">
+        <div class="flex items-center gap-6 mb-5">
+          <div class="text-center">
+            <p class="text-4xl font-bold text-slate-800">4.8</p>
+            <div class="flex items-center gap-0.5 justify-center my-1">
+              {% for i in "12345" %}<i class="ri-star-fill text-amber-400 text-sm"></i>{% endfor %}
+            </div>
+            <p class="text-xs text-slate-400">84 ratings</p>
+          </div>
+          <div class="flex-1 space-y-1.5">
+            {% for i in "54321" %}
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500 w-2">{{ forloop.revcounter }}</span>
+              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-amber-400 rounded-full"
+                  style="width:{% if forloop.counter==1 %} 75% {% elif forloop.counter==2 %}15%{% elif forloop.counter==3 %}7%{% elif forloop.counter==4 %}2%{% else %}1%{% endif %}"></div>
+              </div>
+              <span class="text-xs text-slate-400">
+                {% if forloop.counter==1 %}63{% elif forloop.counter==2 %}13{% elif forloop.counter==3 %}6{% elif forloop.counter==4 %}1{% else %}1{% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="space-y-4">
+          <div class="flex gap-3">
+            <img src="https://ui-avatars.com/api/?name=H+G&background=818cf8&color=fff&size=32" class="w-8 h-8 rounded-full flex-shrink-0"/>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-xs font-semibold text-slate-700">Hermione Granger</p>
+                <div class="flex gap-0.5">{% for i in "12345" %}<i class="ri-star-fill text-amber-400 text-xs"></i>{% endfor %}</div>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed">Absolutely brilliant course. The explanations are crystal clear and the assignments really solidify your understanding.</p>
+              <p class="text-xs text-slate-400 mt-1">2 weeks ago</p>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <img src="https://ui-avatars.com/api/?name=R+W&background=4f46e5&color=fff&size=32" class="w-8 h-8 rounded-full flex-shrink-0"/>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-xs font-semibold text-slate-700">Ron Weasley</p>
+                <div class="flex gap-0.5">{% for i in "1234" %}<i class="ri-star-fill text-amber-400 text-xs"></i>{% endfor %}<i class="ri-star-line text-amber-400 text-xs"></i></div>
+              </div>
+              <p class="text-sm text-slate-600 leading-relaxed">Good course overall. Some weeks felt a bit fast-paced but the lecture notes helped catch up.</p>
+              <p class="text-xs text-slate-400 mt-1">1 month ago</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───── RIGHT: Enrollment card + info ───── -->
+  <div class="space-y-5">
+
+    <!-- ENROLLMENT CARD -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal sticky top-6">
+      <!-- Course thumbnail -->
+      <div class="h-32 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
+        <i class="ri-code-s-slash-line text-white/20 text-8xl"></i>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center cursor-pointer hover:bg-white/30 transition">
+            <i class="ri-play-fill text-white text-xl pl-0.5"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Already enrolled state -->
+      {% if is_enrolled %}
+      <div id="enrolled-state">
+        <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl p-3 mb-4">
+          <i class="ri-checkbox-circle-fill text-emerald-500"></i>
+          <p class="text-sm font-semibold text-emerald-700">You're enrolled!</p>
+        </div>
+        <a href="{% url 'course_content' course.id %}"
+           class="btn-enroll w-full flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl text-sm mb-3">
+          <i class="ri-play-circle-line"></i> Continue Learning
+        </a>
+        <button onclick="confirmDrop()"
+          class="w-full text-sm font-medium text-red-400 border border-red-100 hover:bg-red-50 transition py-2.5 rounded-xl">
+          Drop course
+        </button>
+      </div>
+
+      <!-- Not enrolled state (hidden) -->
+      {% else %}
+      <div id="not-enrolled-state">
+        <form method="POST" action="{% url 'course_enroll' course.id %}">
+          {% csrf_token %}
+          <button type="submit"
+            class="btn-enroll w-full flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl text-sm">
+            <i class="ri-add-circle-line"></i> Enroll Now — Free
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Course meta -->
+      <div class="space-y-3 mt-5 pt-4 border-t border-slate-100">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1.5"><i class="ri-time-line text-slate-400"></i> Duration</span>
+          <span class="font-medium text-slate-700">{{ course.duration_weeks|default:14 }} weeks</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1.5"><i class="ri-book-2-line text-slate-400"></i> Lectures</span>
+          <span class="font-medium text-slate-700">{{ course.lecture_count|default:12 }} lectures</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1.5"><i class="ri-file-list-3-line text-slate-400"></i> Assignments</span>
+          <span class="font-medium text-slate-700">{{ course.assignment_count|default:6 }} assignments</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1.5"><i class="ri-questionnaire-line text-slate-400"></i> Quizzes</span>
+          <span class="font-medium text-slate-700">{{ course.quiz_count|default:12 }} quizzes</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1.5"><i class="ri-bar-chart-line text-slate-400"></i> Level</span>
+          <span class="font-medium text-slate-700">{{ course.level|default:"Intermediate" }}</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1.5"><i class="ri-group-line text-slate-400"></i> Students</span>
+          <span class="font-medium text-slate-700">{{ course.enrollments.count }} enrolled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related courses -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h3 class="font-semibold text-slate-700 text-sm mb-3">Related Courses</h3>
+      <div class="space-y-3">
+        <a href="{% url 'course_detail' 2 %}" class="flex items-center gap-3 hover:bg-slate-50 -mx-2 px-2 py-2 rounded-xl transition">
+          <div class="w-9 h-9 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-database-2-line text-violet-600 text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-slate-700 truncate">Introduction to Database</p>
+            <p class="text-xs text-slate-400">Prof. Snape</p>
+          </div>
+        </a>
+        <a href="{% url 'course_detail' 4 %}" class="flex items-center gap-3 hover:bg-slate-50 -mx-2 px-2 py-2 rounded-xl transition">
+          <div class="w-9 h-9 bg-sky-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-wifi-line text-sky-600 text-sm"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-slate-700 truncate">Computer Networks</p>
+            <p class="text-xs text-slate-400">Prof. McGonagall</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Tab system
+  const tabs = ['overview','modules','instructor','reviews'];
+  function showTab(name) {
+    tabs.forEach(t => {
+      document.getElementById('panel-' + t).classList.add('hidden');
+      const btn = document.getElementById('tab-' + t);
+      btn.classList.remove('active','text-primary-600');
+      btn.classList.add('text-slate-500','border-transparent');
+    });
+    document.getElementById('panel-' + name).classList.remove('hidden');
+    const active = document.getElementById('tab-' + name);
+    active.classList.add('active','text-primary-600');
+    active.classList.remove('text-slate-500','border-transparent');
+  }
+
+  // Module toggle
+  function toggleModule(btn) {
+    const body    = btn.nextElementSibling;
+    const chevron = btn.querySelector('.module-toggle');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+  }
+
+  // Drop course confirm
+  function confirmDrop() {
+    if (confirm('Are you sure you want to drop Algorithms 101?')) {
+      document.getElementById('enrolled-state').classList.add('hidden');
+      document.getElementById('not-enrolled-state').classList.remove('hidden');
+    }
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e,i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

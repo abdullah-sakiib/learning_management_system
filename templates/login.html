@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — EduFlow</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'sans-serif'],
+            serif: ['DM Serif Display', 'serif'],
+          },
+          colors: {
+            primary: {
+              50:  '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .font-serif { font-family: 'DM Serif Display', serif; }
+
+    /* Left panel background */
+    .left-panel {
+      background: linear-gradient(145deg, #312e81 0%, #4338ca 40%, #6366f1 100%);
+    }
+
+    /* Dot grid */
+    .dot-grid {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Input focus ring */
+    .input-field:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    /* Btn */
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(99,102,241,0.45);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Card fade in */
+    .auth-card {
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Floating shapes on left panel */
+    @keyframes floatShape {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50%       { transform: translateY(-15px) rotate(5deg); }
+    }
+    .shape1 { animation: floatShape 7s ease-in-out infinite; }
+    .shape2 { animation: floatShape 9s ease-in-out 2s infinite; }
+    .shape3 { animation: floatShape 6s ease-in-out 1s infinite; }
+
+    /* Error shake */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+    .shake { animation: shake 0.4s ease; }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex">
+
+  <!-- ══════════════════════════
+       LEFT PANEL (decorative)
+  ══════════════════════════ -->
+  <div class="left-panel hidden lg:flex lg:w-[480px] xl:w-[520px] flex-shrink-0 flex-col justify-between p-12 relative overflow-hidden">
+
+    <!-- Dot grid -->
+    <div class="dot-grid absolute inset-0 pointer-events-none"></div>
+
+    <!-- Floating shapes -->
+    <div class="shape1 absolute top-24 right-16 w-32 h-32 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm"></div>
+    <div class="shape2 absolute bottom-40 right-8 w-20 h-20 rounded-2xl bg-white/5 border border-white/10"></div>
+    <div class="shape3 absolute top-1/2 left-8 w-16 h-16 rounded-xl bg-white/5 border border-white/10"></div>
+
+    <!-- Logo -->
+    <div class="relative z-10">
+      <a href="{% url 'landing' %}" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center backdrop-blur-sm">
+          <i class="ri-graduation-cap-fill text-white text-xl"></i>
+        </div>
+        <span class="font-semibold text-white text-xl tracking-tight">EduFlow</span>
+      </a>
+    </div>
+
+    <!-- Center content -->
+    <div class="relative z-10">
+      <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 mb-6">
+        <i class="ri-shield-check-line text-primary-300 text-sm"></i>
+        <span class="text-xs font-medium text-white/80">Secure university portal</span>
+      </div>
+      <h2 class="font-serif text-4xl xl:text-5xl text-white leading-tight mb-4">
+        Welcome<br/>back to<br/>EduFlow.
+      </h2>
+      <p class="text-primary-200 text-base leading-relaxed max-w-xs">
+        Your courses, assignments, and grades are all waiting for you.
+      </p>
+
+      <!-- Testimonial -->
+      <div class="mt-10 bg-white/10 border border-white/15 backdrop-blur-sm rounded-2xl p-5">
+        <div class="flex items-center gap-1 mb-3">
+          <i class="ri-star-fill text-amber-400 text-sm"></i>
+          <i class="ri-star-fill text-amber-400 text-sm"></i>
+          <i class="ri-star-fill text-amber-400 text-sm"></i>
+          <i class="ri-star-fill text-amber-400 text-sm"></i>
+          <i class="ri-star-fill text-amber-400 text-sm"></i>
+        </div>
+        <p class="text-white/85 text-sm leading-relaxed italic mb-4">
+          "EduFlow made managing my 6 courses so much easier. I never miss a deadline anymore."
+        </p>
+        <div class="flex items-center gap-3">
+          <img src="https://ui-avatars.com/api/?name=H+G&background=818cf8&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+          <div>
+            <p class="text-white text-xs font-semibold">Hermione Granger</p>
+            <p class="text-primary-300 text-xs">Computer Science, Year 3</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom stats -->
+    <div class="relative z-10 flex items-center gap-6">
+      <div>
+        <p class="text-white font-semibold text-lg">2,400+</p>
+        <p class="text-primary-300 text-xs">Active students</p>
+      </div>
+      <div class="w-px h-8 bg-white/20"></div>
+      <div>
+        <p class="text-white font-semibold text-lg">120+</p>
+        <p class="text-primary-300 text-xs">Courses</p>
+      </div>
+      <div class="w-px h-8 bg-white/20"></div>
+      <div>
+        <p class="text-white font-semibold text-lg">48</p>
+        <p class="text-primary-300 text-xs">Instructors</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════
+       RIGHT PANEL (form)
+  ══════════════════════════ -->
+  <div class="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
+    <div class="auth-card w-full max-w-md">
+
+      <!-- Mobile logo -->
+      <div class="flex lg:hidden items-center gap-2.5 mb-8">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-md">
+          <i class="ri-graduation-cap-fill text-white text-lg"></i>
+        </div>
+        <span class="font-semibold text-slate-800 text-lg">EduFlow</span>
+      </div>
+
+      <!-- Heading -->
+      <div class="mb-8">
+        <h1 class="font-serif text-3xl text-slate-900 mb-2">Sign in</h1>
+        <p class="text-slate-500 text-sm">Enter your university credentials to continue.</p>
+      </div>
+
+      <!-- Django messages -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flex items-center gap-3 p-4 rounded-xl mb-6
+            {% if message.tags == 'error' %}bg-red-50 border border-red-100 text-red-600
+            {% else %}bg-emerald-50 border border-emerald-100 text-emerald-600{% endif %}">
+            <i class="{% if message.tags == 'error' %}ri-error-warning-line{% else %}ri-checkbox-circle-line{% endif %} text-lg flex-shrink-0"></i>
+            <p class="text-sm font-medium">{{ message }}</p>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Form -->
+      <form method="POST" action="{% url 'login' %}" id="login-form" novalidate>
+        {% csrf_token %}
+
+        <!-- Email -->
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+          <div class="relative">
+            <i class="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+            <input
+              type="email"
+              name="email"
+              id="email"
+              placeholder="you@university.edu"
+              autocomplete="email"
+              required
+              class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"
+            />
+          </div>
+          <p class="text-xs text-red-500 mt-1.5 hidden" id="email-error">Please enter a valid email.</p>
+        </div>
+
+        <!-- Password -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-sm font-medium text-slate-700">Password</label>
+            <a href="{% url 'password_reset' %}" class="text-xs text-primary-500 hover:text-primary-600 font-medium transition">Forgot password?</a>
+          </div>
+          <div class="relative">
+            <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+            <input
+              type="password"
+              name="password"
+              id="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+              class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"
+            />
+            <button type="button" id="toggle-password"
+              onclick="togglePassword()"
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              <i class="ri-eye-off-line text-base" id="eye-icon"></i>
+            </button>
+          </div>
+          <p class="text-xs text-red-500 mt-1.5 hidden" id="password-error">Password is required.</p>
+        </div>
+
+        <!-- Remember me -->
+        <div class="flex items-center gap-2.5 mb-6">
+          <input type="checkbox" name="remember" id="remember"
+            class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"/>
+          <label for="remember" class="text-sm text-slate-600 cursor-pointer">Keep me signed in</label>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn"
+          class="btn-primary w-full flex items-center justify-center gap-2 text-white font-semibold py-3.5 rounded-xl text-base">
+          <span id="btn-text">Sign in</span>
+          <i class="ri-arrow-right-line" id="btn-icon"></i>
+          <svg id="btn-spinner" class="hidden animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        </button>
+
+      </form>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-3 my-6">
+        <div class="flex-1 h-px bg-slate-100"></div>
+        <span class="text-xs text-slate-400 font-medium">or</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+
+      <!-- Register link -->
+      <p class="text-center text-sm text-slate-500">
+        Don't have an account?
+        <a href="{% url 'register' %}" class="text-primary-600 font-semibold hover:text-primary-700 transition ml-1">Create one</a>
+      </p>
+
+      <!-- Footer note -->
+      <p class="text-center text-xs text-slate-400 mt-8">
+        By signing in, you agree to EduFlow's
+        <a href="#" class="text-primary-500 hover:underline">Terms</a> and
+        <a href="#" class="text-primary-500 hover:underline">Privacy Policy</a>.
+      </p>
+
+    </div>
+  </div>
+
+  <script>
+    // Toggle password visibility
+    function togglePassword() {
+      const input = document.getElementById('password');
+      const icon  = document.getElementById('eye-icon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'ri-eye-line text-base';
+      } else {
+        input.type = 'password';
+        icon.className = 'ri-eye-off-line text-base';
+      }
+    }
+
+    // Client-side validation + loading state
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      let valid = true;
+
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      const emailErr = document.getElementById('email-error');
+      const passErr  = document.getElementById('password-error');
+
+      // Reset errors
+      emailErr.classList.add('hidden');
+      passErr.classList.add('hidden');
+      email.classList.remove('border-red-300');
+      password.classList.remove('border-red-300');
+
+      // Validate email
+      if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        emailErr.classList.remove('hidden');
+        email.classList.add('border-red-300');
+        valid = false;
+      }
+
+      // Validate password
+      if (!password.value) {
+        passErr.classList.remove('hidden');
+        password.classList.add('border-red-300');
+        valid = false;
+      }
+
+      if (!valid) {
+        e.preventDefault();
+        document.getElementById('login-form').classList.add('shake');
+        setTimeout(() => document.getElementById('login-form').classList.remove('shake'), 400);
+        return;
+      }
+
+      // Loading state
+      document.getElementById('btn-text').textContent = 'Signing in...';
+      document.getElementById('btn-icon').classList.add('hidden');
+      document.getElementById('btn-spinner').classList.remove('hidden');
+      document.getElementById('submit-btn').disabled = true;
+    });
+  </script>
+
+</body>
+</html>

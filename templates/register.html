@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — EduFlow</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'sans-serif'],
+            serif: ['DM Serif Display', 'serif'],
+          },
+          colors: {
+            primary: {
+              50:  '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
+              300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
+              600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81',
+            },
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+    .font-serif { font-family: 'DM Serif Display', serif; }
+
+    .left-panel {
+      background: linear-gradient(145deg, #312e81 0%, #4338ca 40%, #6366f1 100%);
+    }
+    .dot-grid {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(99,102,241,0.45); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .auth-card { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes floatShape {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50%       { transform: translateY(-15px) rotate(5deg); }
+    }
+    .shape1 { animation: floatShape 7s ease-in-out infinite; }
+    .shape2 { animation: floatShape 9s ease-in-out 2s infinite; }
+    .shape3 { animation: floatShape 6s ease-in-out 1s infinite; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .shake { animation: shake 0.4s ease; }
+
+    /* Role selector */
+    .role-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .role-card:hover { border-color: #a5b4fc; background: #f5f3ff; }
+    .role-card.selected {
+      border-color: #6366f1;
+      background: #eef2ff;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .role-card.selected .role-icon { background: #4f46e5; color: white; }
+    .role-check { opacity: 0; transition: opacity 0.2s; }
+    .role-card.selected .role-check { opacity: 1; }
+
+    /* Password strength bar */
+    .strength-bar { transition: width 0.4s ease, background 0.4s ease; }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel hidden lg:flex lg:w-[480px] xl:w-[520px] flex-shrink-0 flex-col justify-between p-12 relative overflow-hidden">
+    <div class="dot-grid absolute inset-0 pointer-events-none"></div>
+    <div class="shape1 absolute top-24 right-16 w-32 h-32 rounded-3xl bg-white/5 border border-white/10"></div>
+    <div class="shape2 absolute bottom-40 right-8 w-20 h-20 rounded-2xl bg-white/5 border border-white/10"></div>
+    <div class="shape3 absolute top-1/2 left-8 w-16 h-16 rounded-xl bg-white/5 border border-white/10"></div>
+
+    <!-- Logo -->
+    <div class="relative z-10">
+      <a href="{% url 'landing' %}" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center backdrop-blur-sm">
+          <i class="ri-graduation-cap-fill text-white text-xl"></i>
+        </div>
+        <span class="font-semibold text-white text-xl tracking-tight">EduFlow</span>
+      </a>
+    </div>
+
+    <!-- Center content -->
+    <div class="relative z-10">
+      <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 mb-6">
+        <i class="ri-user-add-line text-primary-300 text-sm"></i>
+        <span class="text-xs font-medium text-white/80">Join thousands of learners</span>
+      </div>
+      <h2 class="font-serif text-4xl xl:text-5xl text-white leading-tight mb-4">
+        Start your<br/>learning<br/>journey.
+      </h2>
+      <p class="text-primary-200 text-base leading-relaxed max-w-xs">
+        Create your account and get instant access to all your courses, assignments, and grades.
+      </p>
+
+      <!-- Feature list -->
+      <ul class="mt-8 space-y-3">
+        <li class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+            <i class="ri-checkbox-circle-line text-emerald-400 text-sm"></i>
+          </div>
+          <span class="text-white/80 text-sm">Access all your enrolled courses</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+            <i class="ri-checkbox-circle-line text-emerald-400 text-sm"></i>
+          </div>
+          <span class="text-white/80 text-sm">Submit assignments and track deadlines</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+            <i class="ri-checkbox-circle-line text-emerald-400 text-sm"></i>
+          </div>
+          <span class="text-white/80 text-sm">Take quizzes and see your grades instantly</span>
+        </li>
+        <li class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+            <i class="ri-checkbox-circle-line text-emerald-400 text-sm"></i>
+          </div>
+          <span class="text-white/80 text-sm">Stay updated with course announcements</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Bottom -->
+    <div class="relative z-10 flex items-center gap-6">
+      <div><p class="text-white font-semibold text-lg">Free</p><p class="text-primary-300 text-xs">Always free for students</p></div>
+      <div class="w-px h-8 bg-white/20"></div>
+      <div><p class="text-white font-semibold text-lg">Instant</p><p class="text-primary-300 text-xs">Access right away</p></div>
+      <div class="w-px h-8 bg-white/20"></div>
+      <div><p class="text-white font-semibold text-lg">Secure</p><p class="text-primary-300 text-xs">University-grade security</p></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL (form) -->
+  <div class="flex-1 flex items-start justify-center p-6 lg:p-12 bg-white overflow-y-auto">
+    <div class="auth-card w-full max-w-md py-4">
+
+      <!-- Mobile logo -->
+      <div class="flex lg:hidden items-center gap-2.5 mb-8">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-md">
+          <i class="ri-graduation-cap-fill text-white text-lg"></i>
+        </div>
+        <span class="font-semibold text-slate-800 text-lg">EduFlow</span>
+      </div>
+
+      <!-- Heading -->
+      <div class="mb-7">
+        <h1 class="font-serif text-3xl text-slate-900 mb-2">Create account</h1>
+        <p class="text-slate-500 text-sm">Fill in your details to get started with EduFlow.</p>
+      </div>
+
+      <!-- Django messages -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flex items-center gap-3 p-4 rounded-xl mb-5
+            {% if message.tags == 'error' %}bg-red-50 border border-red-100 text-red-600
+            {% else %}bg-emerald-50 border border-emerald-100 text-emerald-600{% endif %}">
+            <i class="{% if message.tags == 'error' %}ri-error-warning-line{% else %}ri-checkbox-circle-line{% endif %} text-lg flex-shrink-0"></i>
+            <p class="text-sm font-medium">{{ message }}</p>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Form -->
+      <form method="POST" action="{% url 'register' %}" id="register-form" novalidate>
+        {% csrf_token %}
+
+        <!-- Role selector -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-slate-700 mb-2">I am a...</label>
+          <div class="grid grid-cols-2 gap-3">
+
+            <label class="role-card selected border-2 border-slate-200 rounded-xl p-3.5 flex items-center gap-3" id="role-student">
+              <input type="radio" name="role" value="student" class="hidden" checked/>
+              <div class="role-icon w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0 transition-all duration-200">
+                <i class="ri-user-line text-base"></i>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-slate-800">Student</p>
+                <p class="text-xs text-slate-400">Enroll & learn</p>
+              </div>
+              <i class="role-check ri-checkbox-circle-fill text-primary-500 text-lg flex-shrink-0"></i>
+            </label>
+
+            <label class="role-card border-2 border-slate-200 rounded-xl p-3.5 flex items-center gap-3" id="role-instructor">
+              <input type="radio" name="role" value="instructor" class="hidden"/>
+              <div class="role-icon w-9 h-9 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0 transition-all duration-200">
+                <i class="ri-teach-line text-base"></i>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-semibold text-slate-800">Instructor</p>
+                <p class="text-xs text-slate-400">Teach & manage</p>
+              </div>
+              <i class="role-check ri-checkbox-circle-fill text-primary-500 text-lg flex-shrink-0"></i>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- Name row -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">First name</label>
+            <input type="text" name="first_name" id="first_name" placeholder="John" required
+              class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"/>
+            <p class="text-xs text-red-500 mt-1 hidden" id="fname-error">Required.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Last name</label>
+            <input type="text" name="last_name" id="last_name" placeholder="Doe" required
+              class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"/>
+            <p class="text-xs text-red-500 mt-1 hidden" id="lname-error">Required.</p>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+          <div class="relative">
+            <i class="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+            <input type="email" name="email" id="email" placeholder="you@university.edu" required
+              class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"/>
+          </div>
+          <p class="text-xs text-red-500 mt-1 hidden" id="email-error">Enter a valid email address.</p>
+        </div>
+
+        <!-- Password -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+          <div class="relative">
+            <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+            <input type="password" name="password1" id="password1" placeholder="Min. 8 characters" required
+              oninput="checkStrength(this.value)"
+              class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"/>
+            <button type="button" onclick="togglePass('password1','eye1')"
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              <i class="ri-eye-off-line text-base" id="eye1"></i>
+            </button>
+          </div>
+          <!-- Strength indicator -->
+          <div class="mt-2 space-y-1.5">
+            <div class="flex gap-1">
+              <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                <div id="bar1" class="strength-bar h-full w-0 bg-slate-200 rounded-full"></div>
+              </div>
+              <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                <div id="bar2" class="strength-bar h-full w-0 bg-slate-200 rounded-full"></div>
+              </div>
+              <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                <div id="bar3" class="strength-bar h-full w-0 bg-slate-200 rounded-full"></div>
+              </div>
+              <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                <div id="bar4" class="strength-bar h-full w-0 bg-slate-200 rounded-full"></div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400" id="strength-label">Use 8+ characters with numbers and symbols</p>
+          </div>
+          <p class="text-xs text-red-500 mt-1 hidden" id="pass-error">Password must be at least 8 characters.</p>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-slate-700 mb-1.5">Confirm password</label>
+          <div class="relative">
+            <i class="ri-lock-2-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+            <input type="password" name="password2" id="password2" placeholder="Repeat your password" required
+              class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all duration-200"/>
+            <button type="button" onclick="togglePass('password2','eye2')"
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              <i class="ri-eye-off-line text-base" id="eye2"></i>
+            </button>
+          </div>
+          <p class="text-xs text-red-500 mt-1 hidden" id="pass2-error">Passwords do not match.</p>
+        </div>
+
+        <!-- Terms checkbox -->
+        <div class="flex items-start gap-3 mb-6">
+          <input type="checkbox" name="terms" id="terms" required
+            class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer flex-shrink-0"/>
+          <label for="terms" class="text-sm text-slate-500 leading-relaxed cursor-pointer">
+            I agree to EduFlow's
+            <a href="#" class="text-primary-500 hover:underline font-medium">Terms of Service</a> and
+            <a href="#" class="text-primary-500 hover:underline font-medium">Privacy Policy</a>.
+          </label>
+        </div>
+        <p class="text-xs text-red-500 -mt-4 mb-5 hidden" id="terms-error">You must accept the terms to continue.</p>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn"
+          class="btn-primary w-full flex items-center justify-center gap-2 text-white font-semibold py-3.5 rounded-xl text-base">
+          <span id="btn-text">Create account</span>
+          <i class="ri-arrow-right-line" id="btn-icon"></i>
+          <svg id="btn-spinner" class="hidden animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        </button>
+
+      </form>
+
+      <!-- Login link -->
+      <p class="text-center text-sm text-slate-500 mt-6">
+        Already have an account?
+        <a href="{% url 'login' %}" class="text-primary-600 font-semibold hover:text-primary-700 transition ml-1">Sign in</a>
+      </p>
+
+    </div>
+  </div>
+
+  <script>
+    // Role selector
+    document.querySelectorAll('input[name="role"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+        this.closest('.role-card').classList.add('selected');
+      });
+    });
+    document.querySelectorAll('.role-card').forEach(card => {
+      card.addEventListener('click', function() {
+        const radio = this.querySelector('input[type="radio"]');
+        radio.checked = true;
+        radio.dispatchEvent(new Event('change'));
+      });
+    });
+
+    // Toggle password visibility
+    function togglePass(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      input.type = input.type === 'password' ? 'text' : 'password';
+      icon.className = input.type === 'password' ? 'ri-eye-off-line text-base' : 'ri-eye-line text-base';
+    }
+
+    // Password strength checker
+    function checkStrength(val) {
+      const bars   = ['bar1','bar2','bar3','bar4'];
+      const colors = ['bg-red-400','bg-amber-400','bg-amber-400','bg-emerald-500'];
+      const labels = ['Too short','Weak — add numbers','Fair — add symbols','Strong password'];
+
+      let score = 0;
+      if (val.length >= 8)  score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^a-zA-Z0-9]/.test(val)) score++;
+      if (val.length >= 12) score++;
+
+      bars.forEach((b, i) => {
+        const el = document.getElementById(b);
+        if (i < score) {
+          el.style.width = '100%';
+          el.className = `strength-bar h-full rounded-full ${colors[score - 1]}`;
+        } else {
+          el.style.width = '0%';
+        }
+      });
+
+      const label = document.getElementById('strength-label');
+      label.textContent = val.length === 0 ? 'Use 8+ characters with numbers and symbols' : labels[Math.max(score - 1, 0)];
+      label.className = 'text-xs mt-0.5 ' + (score >= 4 ? 'text-emerald-500' : score >= 2 ? 'text-amber-500' : 'text-red-400');
+    }
+
+    // Form validation
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+      let valid = true;
+      const hide = id => document.getElementById(id).classList.add('hidden');
+      const show = id => document.getElementById(id).classList.remove('hidden');
+      const mark = id => document.getElementById(id).classList.add('border-red-300');
+
+      ['fname-error','lname-error','email-error','pass-error','pass2-error','terms-error'].forEach(hide);
+
+      const fname = document.getElementById('first_name').value.trim();
+      const lname = document.getElementById('last_name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const pass1 = document.getElementById('password1').value;
+      const pass2 = document.getElementById('password2').value;
+      const terms = document.getElementById('terms').checked;
+
+      if (!fname) { show('fname-error'); mark('first_name'); valid = false; }
+      if (!lname) { show('lname-error'); mark('last_name'); valid = false; }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { show('email-error'); mark('email'); valid = false; }
+      if (pass1.length < 8) { show('pass-error'); mark('password1'); valid = false; }
+      if (pass1 !== pass2) { show('pass2-error'); mark('password2'); valid = false; }
+      if (!terms) { show('terms-error'); valid = false; }
+
+      if (!valid) {
+        e.preventDefault();
+        this.classList.add('shake');
+        setTimeout(() => this.classList.remove('shake'), 400);
+        return;
+      }
+
+      // Loading state
+      document.getElementById('btn-text').textContent = 'Creating account...';
+      document.getElementById('btn-icon').classList.add('hidden');
+      document.getElementById('btn-spinner').classList.remove('hidden');
+      document.getElementById('submit-btn').disabled = true;
+    });
+  </script>
+
+</body>
+</html>

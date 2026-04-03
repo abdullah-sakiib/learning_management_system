@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile — EduFlow{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}Manage your account details{% endblock %}
+{% block nav_profile %}active{% endblock %}
+{% block user_name %}John Doe{% endblock %}
+{% block user_role %}Student{% endblock %}
+{% block topbar_user %}John Doe{% endblock %}
+{% block topbar_role %}Student{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .tab-btn { transition: all 0.2s ease; }
+  .tab-btn.active {
+    background: white;
+    color: #4f46e5;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Avatar upload hover */
+  .avatar-wrap:hover .avatar-overlay { opacity: 1; }
+  .avatar-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  /* Save btn */
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+
+  /* Stat badge */
+  .profile-stat {
+    transition: transform 0.25s ease;
+  }
+  .profile-stat:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+  <!-- ══════════════════════════════════
+       PROFILE HEADER CARD
+  ══════════════════════════════════ -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6 reveal">
+
+    <!-- Cover banner -->
+    <div class="h-28 bg-gradient-to-br from-primary-600 via-primary-500 to-indigo-400 relative">
+      <div class="absolute inset-0 opacity-20"
+           style="background-image:radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px); background-size:20px 20px;"></div>
+    </div>
+
+    <div class="px-6 pb-6">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-4">
+
+        <!-- Avatar -->
+        <div class="avatar-wrap relative w-20 h-20 flex-shrink-0 cursor-pointer" onclick="document.getElementById('avatar-input').click()">
+          <img id="avatar-preview"
+               src="https://ui-avatars.com/api/?name=John+Doe&background=4f46e5&color=fff&size=128"
+               class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md"/>
+          <div class="avatar-overlay absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center">
+            <i class="ri-camera-line text-white text-xl"></i>
+          </div>
+          <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="previewAvatar(this)"/>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex items-center gap-2 sm:mb-1">
+          <button onclick="copyProfileLink()"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:border-primary-300 hover:text-primary-600 transition px-3 py-2 rounded-xl">
+            <i class="ri-share-line"></i> Share profile
+          </button>
+          <button onclick="showTab('security')"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:border-primary-300 hover:text-primary-600 transition px-3 py-2 rounded-xl">
+            <i class="ri-lock-line"></i> Change password
+          </button>
+        </div>
+      </div>
+
+      <!-- Name & role -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-slate-800">John Doe</h1>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs bg-primary-50 text-primary-600 font-semibold px-2.5 py-0.5 rounded-full">Student</span>
+            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-map-pin-line"></i> Chittagong, BD</span>
+            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-calendar-line"></i> Joined Jan 2026</span>
+          </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="flex items-center gap-4">
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">6</p>
+            <p class="text-xs text-slate-400">Courses</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">3.8</p>
+            <p class="text-xs text-slate-400">GPA</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">14</p>
+            <p class="text-xs text-slate-400">Submitted</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">92%</p>
+            <p class="text-xs text-slate-400">Avg. grade</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       TAB NAV
+  ══════════════════════════════════ -->
+  <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6 w-fit reveal">
+    <button onclick="showTab('general')" id="tab-general"
+      class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
+      <i class="ri-user-line mr-1.5"></i>General
+    </button>
+    <button onclick="showTab('academic')" id="tab-academic"
+      class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
+      <i class="ri-graduation-cap-line mr-1.5"></i>Academic
+    </button>
+    <button onclick="showTab('security')" id="tab-security"
+      class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
+      <i class="ri-shield-keyhole-line mr-1.5"></i>Security
+    </button>
+  </div>
+
+
+  <div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- ───── MAIN FORM PANEL ───── -->
+    <div class="lg:col-span-2">
+
+      <!-- ── TAB: GENERAL ── -->
+      <div id="panel-general" class="reveal">
+        <form method="POST" action="{% url 'profile' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="general"/>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <i class="ri-user-line text-primary-500"></i> Personal Information
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">First Name</label>
+                <input type="text" name="first_name" value="John"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Last Name</label>
+                <input type="text" name="last_name" value="Doe"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Email Address</label>
+              <div class="relative">
+                <i class="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+                <input type="email" name="email" value="john.doe@university.edu"
+                  class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Phone Number</label>
+              <div class="relative">
+                <i class="ri-phone-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+                <input type="tel" name="phone" value="+880 1XXXXXXXXX" placeholder="+880 XXXXXXXXXX"
+                  class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">City</label>
+                <input type="text" name="city" value="Chittagong"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Country</label>
+                <input type="text" name="country" value="Bangladesh"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Bio</label>
+              <textarea name="bio" rows="3" placeholder="Tell us a little about yourself..."
+                class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all resize-none">Computer Science student passionate about algorithms and databases.</textarea>
+              <p class="text-xs text-slate-400 mt-1">Max 200 characters</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="reset"
+              class="px-5 py-2.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+              Discard
+            </button>
+            <button type="submit"
+              class="btn-primary px-6 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2">
+              <i class="ri-save-line"></i> Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── TAB: ACADEMIC ── -->
+      <div id="panel-academic" class="hidden reveal">
+        <form method="POST" action="{% url 'profile' %}">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="academic"/>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <i class="ri-graduation-cap-line text-primary-500"></i> Academic Information
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Student ID</label>
+                <input type="text" value="2100639" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Department</label>
+                <input type="text" name="department" value="Computer Science &amp; Engineering"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Year / Semester</label>
+                <select name="year"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all">
+                  <option>Year 1 — Semester 1</option>
+                  <option>Year 1 — Semester 2</option>
+                  <option selected>Year 2 — Semester 1</option>
+                  <option>Year 2 — Semester 2</option>
+                  <option>Year 3 — Semester 1</option>
+                  <option>Year 3 — Semester 2</option>
+                  <option>Year 4 — Semester 1</option>
+                  <option>Year 4 — Semester 2</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Current GPA</label>
+                <input type="text" value="3.8 / 4.0" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Enrolled Courses</label>
+              <div class="space-y-2">
+                {% for c in "123456" %}
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center">
+                      <i class="ri-book-2-line text-primary-600 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-slate-700">
+                        {% if forloop.counter == 1 %}Algorithms 101
+                        {% elif forloop.counter == 2 %}Introduction to Database
+                        {% elif forloop.counter == 3 %}Basic Mathematics
+                        {% elif forloop.counter == 4 %}Human Computer Interaction
+                        {% elif forloop.counter == 5 %}Computer Networks
+                        {% else %}Introduction to Management{% endif %}
+                      </p>
+                      <p class="text-xs text-slate-400">
+                        {% if forloop.counter == 1 %}Prof. Sprout
+                        {% elif forloop.counter == 2 %}Prof. Snape
+                        {% elif forloop.counter == 3 %}Prof. Umbridge
+                        {% elif forloop.counter == 4 %}Prof. Flitwick
+                        {% elif forloop.counter == 5 %}Prof. McGonagall
+                        {% else %}Prof. Trelawney{% endif %}
+                      </p>
+                    </div>
+                  </div>
+                  <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="submit"
+              class="btn-primary px-6 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2">
+              <i class="ri-save-line"></i> Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── TAB: SECURITY ── -->
+      <div id="panel-security" class="hidden reveal">
+        <form method="POST" action="{% url 'profile' %}" id="security-form">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="security"/>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <i class="ri-shield-keyhole-line text-primary-500"></i> Change Password
+            </h2>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Current Password</label>
+              <div class="relative">
+                <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="password" name="current_password" placeholder="••••••••"
+                  class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+                <button type="button" onclick="togglePass('current_password','eye0')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  <i class="ri-eye-off-line" id="eye0"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">New Password</label>
+              <div class="relative">
+                <i class="ri-lock-2-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="password" name="new_password1" id="new_pass" placeholder="Min. 8 characters"
+                  oninput="checkStrength(this.value)"
+                  class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+                <button type="button" onclick="togglePass('new_pass','eye1')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  <i class="ri-eye-off-line" id="eye1"></i>
+                </button>
+              </div>
+              <!-- Strength bars -->
+              <div class="flex gap-1 mt-2">
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb1" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb2" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb3" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb4" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+              </div>
+              <p class="text-xs text-slate-400 mt-1" id="strength-label">Use 8+ characters with numbers and symbols</p>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Confirm New Password</label>
+              <div class="relative">
+                <i class="ri-lock-2-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="password" name="new_password2" id="conf_pass" placeholder="Repeat new password"
+                  class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+                <button type="button" onclick="togglePass('conf_pass','eye2')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  <i class="ri-eye-off-line" id="eye2"></i>
+                </button>
+              </div>
+              <p class="text-xs text-red-500 mt-1 hidden" id="pass-match-err">Passwords do not match.</p>
+            </div>
+          </div>
+
+          <!-- Danger zone -->
+          <div class="bg-white rounded-2xl border border-red-100 shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-red-500 mb-1 flex items-center gap-2">
+              <i class="ri-error-warning-line"></i> Danger Zone
+            </h2>
+            <p class="text-xs text-slate-500 mb-4">These actions are irreversible. Proceed with caution.</p>
+            <button type="button" onclick="confirmDeactivate()"
+              class="inline-flex items-center gap-2 text-sm font-medium text-red-500 border border-red-200 hover:bg-red-50 transition px-4 py-2.5 rounded-xl">
+              <i class="ri-user-unfollow-line"></i> Deactivate my account
+            </button>
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="button" onclick="showTab('general')"
+              class="px-5 py-2.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+              Cancel
+            </button>
+            <button type="submit"
+              class="btn-primary px-6 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2">
+              <i class="ri-shield-check-line"></i> Update password
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- ───── RIGHT SIDEBAR ───── -->
+    <div class="space-y-5">
+
+      <!-- Avatar upload hint -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Profile Photo</h3>
+        <div class="flex flex-col items-center gap-3">
+          <img id="sidebar-avatar"
+               src="https://ui-avatars.com/api/?name=John+Doe&background=4f46e5&color=fff&size=128"
+               class="w-20 h-20 rounded-2xl object-cover shadow"/>
+          <button onclick="document.getElementById('avatar-input').click()"
+            class="text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-4 py-2 rounded-xl">
+            <i class="ri-upload-2-line mr-1"></i> Upload photo
+          </button>
+          <p class="text-xs text-slate-400 text-center">JPG, PNG or GIF. Max 2MB.</p>
+        </div>
+      </div>
+
+      <!-- Account Info -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Account Details</h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Role</span>
+            <span class="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">Student</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Member since</span>
+            <span class="text-xs font-medium text-slate-700">Jan 2026</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Last login</span>
+            <span class="text-xs font-medium text-slate-700">Today, 8:00 AM</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Account status</span>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade summary -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Grade Summary</h3>
+        <div class="space-y-2.5">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600">Algorithms 101</span>
+              <span class="font-semibold text-slate-700">88/100</span>
+            </div>
+            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-primary-400 rounded-full" style="width:88%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600">Intro to Database</span>
+              <span class="font-semibold text-slate-700">92/100</span>
+            </div>
+            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-violet-400 rounded-full" style="width:92%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600">Basic Mathematics</span>
+              <span class="font-semibold text-slate-700">95/100</span>
+            </div>
+            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-400 rounded-full" style="width:95%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs text-slate-500">Current GPA</span>
+          <span class="text-base font-bold text-primary-600">3.8 <span class="text-xs text-slate-400 font-normal">/ 4.0</span></span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Tab system
+  const tabs = ['general', 'academic', 'security'];
+  function showTab(name) {
+    tabs.forEach(t => {
+      document.getElementById('panel-' + t).classList.add('hidden');
+      document.getElementById('tab-' + t).classList.remove('active');
+    });
+    document.getElementById('panel-' + name).classList.remove('hidden');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  // Avatar preview
+  function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('avatar-preview').src = e.target.result;
+        document.getElementById('sidebar-avatar').src  = e.target.result;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Toggle password visibility
+  function togglePass(inputId, iconId) {
+    const inp  = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    icon.className = inp.type === 'password' ? 'ri-eye-off-line' : 'ri-eye-line';
+  }
+
+  // Password strength
+  function checkStrength(val) {
+    const colors = ['bg-red-400','bg-amber-400','bg-amber-400','bg-emerald-500'];
+    const labels = ['Too short','Weak — add numbers','Fair — add symbols','Strong password'];
+    let score = 0;
+    if (val.length >= 8)  score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^a-zA-Z0-9]/.test(val)) score++;
+    if (val.length >= 12) score++;
+    ['sb1','sb2','sb3','sb4'].forEach((b,i) => {
+      const el = document.getElementById(b);
+      el.style.width = i < score ? '100%' : '0%';
+      el.className = `h-full rounded-full transition-all duration-300 ${i < score ? colors[score-1] : ''}`;
+    });
+    const lbl = document.getElementById('strength-label');
+    lbl.textContent = val.length === 0 ? 'Use 8+ characters with numbers and symbols' : labels[Math.max(score-1, 0)];
+    lbl.className = 'text-xs mt-1 ' + (score >= 4 ? 'text-emerald-500' : score >= 2 ? 'text-amber-500' : 'text-red-400');
+  }
+
+  // Copy profile link
+  function copyProfileLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      alert('Profile link copied!');
+    });
+  }
+
+  // Deactivate confirm
+  function confirmDeactivate() {
+    if (confirm('Are you sure you want to deactivate your account? This action cannot be undone.')) {
+      window.location.href = '{% url "logout" %}';
+    }
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

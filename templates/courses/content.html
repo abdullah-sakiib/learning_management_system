@@ -1,0 +1,535 @@
+{% extends 'base.html' %}
+
+{% block title %}Week 4 — Algorithms 101 — EduFlow{% endblock %}
+{% block page_title %}Algorithms 101{% endblock %}
+{% block page_subtitle %}Week 4 · Sorting Algorithms{% endblock %}
+{% block nav_courses %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Full-height content layout */
+  .content-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 1024px) {
+    .content-layout { grid-template-columns: 1fr; }
+    #sidebar-panel  { display: none; }
+    #sidebar-panel.mobile-open { display: block; }
+  }
+
+  /* Sidebar sticky */
+  .sidebar-sticky { position: sticky; top: 1.5rem; max-height: calc(100vh - 8rem); overflow-y: auto; }
+
+  /* Module items */
+  .lecture-item { transition: background 0.2s ease, border-color 0.2s ease; }
+  .lecture-item:hover { background: #f8f7ff; }
+  .lecture-item.active {
+    background: #eef2ff;
+    border-left: 3px solid #4f46e5;
+  }
+  .lecture-item.completed .lec-icon { color: #22c55e; }
+
+  /* Module accordion */
+  .mod-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .mod-body.open { max-height: 800px; }
+  .mod-chevron { transition: transform 0.3s ease; }
+  .mod-chevron.open { transform: rotate(180deg); }
+
+  /* Video area */
+  .video-area {
+    background: #0f172a;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/9;
+  }
+
+  /* Note editor */
+  #note-editor:focus { outline: none; }
+
+  /* Progress ring */
+  .progress-ring { transform: rotate(-90deg); }
+
+  /* Nav buttons */
+  .nav-btn {
+    transition: all 0.2s ease;
+  }
+  .nav-btn:hover { transform: translateY(-1px); }
+
+  /* Tab */
+  .content-tab.active {
+    color: #4f46e5;
+    border-bottom: 2px solid #4f46e5;
+  }
+
+  /* Mobile sidebar toggle */
+  #mobile-sidebar-toggle { display: none; }
+  @media (max-width: 1024px) { #mobile-sidebar-toggle { display: flex; } }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb + mobile toggle -->
+<div class="flex items-center justify-between mb-5">
+  <div class="flex items-center gap-2 text-xs text-slate-400">
+    <a href="{% url 'courses' %}" class="hover:text-primary-600 transition">Courses</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <a href="{% url 'course_detail' 1 %}" class="hover:text-primary-600 transition">Algorithms 101</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <span class="text-slate-600 font-medium">Week 4</span>
+  </div>
+  <button id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()"
+    class="items-center gap-2 text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-3 py-2 rounded-xl">
+    <i class="ri-list-unordered"></i> Modules
+  </button>
+</div>
+
+<div class="content-layout">
+
+  <!-- ═══════════════════════════════════
+       SIDEBAR: Module list
+  ════════════════════════════════════ -->
+  <div id="sidebar-panel">
+    <div class="sidebar-sticky bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+      <!-- Course header in sidebar -->
+      <div class="bg-gradient-to-br from-indigo-600 to-primary-700 p-4">
+        <p class="text-indigo-200 text-xs mb-1">Algorithms 101</p>
+        <div class="flex items-center justify-between">
+          <p class="text-white font-semibold text-sm">Your Progress</p>
+          <span class="text-white font-bold text-sm">35%</span>
+        </div>
+        <div class="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
+          <div class="h-full bg-white rounded-full" style="width:35%"></div>
+        </div>
+        <p class="text-indigo-200 text-xs mt-1.5">4 of 12 lectures completed</p>
+      </div>
+
+      <!-- Module list -->
+      <div class="divide-y divide-slate-50 overflow-y-auto" style="max-height:calc(100vh - 280px)">
+
+        <!-- Module 1: Completed -->
+        <div>
+          <button onclick="toggleMod(this)" class="w-full flex items-center gap-3 p-3.5 hover:bg-slate-50 transition text-left">
+            <div class="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
+              <i class="ri-check-line text-white text-xs"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-slate-700 truncate">Week 1: Intro to Algorithms</p>
+              <p class="text-xs text-emerald-500">Completed</p>
+            </div>
+            <i class="ri-arrow-down-s-line mod-chevron text-slate-400 text-sm"></i>
+          </button>
+          <div class="mod-body">
+            <div class="bg-slate-50 divide-y divide-slate-100">
+              <div class="lecture-item completed flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(1,1,'Intro to Algorithms','lecture')">
+                <i class="lec-icon ri-play-circle-line text-emerald-500 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-slate-600 flex-1">Lecture video</span>
+                <i class="ri-checkbox-circle-fill text-emerald-400 text-xs"></i>
+              </div>
+              <div class="lecture-item completed flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(1,2,'Lecture Notes','pdf')">
+                <i class="lec-icon ri-file-pdf-line text-red-400 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-slate-600 flex-1">Lecture notes</span>
+                <i class="ri-checkbox-circle-fill text-emerald-400 text-xs"></i>
+              </div>
+              <div class="lecture-item completed flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(1,3,'Week 1 Quiz','quiz')">
+                <i class="lec-icon ri-questionnaire-line text-amber-400 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-slate-600 flex-1">Quiz</span>
+                <i class="ri-checkbox-circle-fill text-emerald-400 text-xs"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 4: Current (open by default) -->
+        <div>
+          <button onclick="toggleMod(this)" class="w-full flex items-center gap-3 p-3.5 bg-primary-50 text-left">
+            <div class="w-6 h-6 rounded-lg bg-primary-500 flex items-center justify-center flex-shrink-0">
+              <span class="text-white text-xs font-bold">4</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-primary-700 truncate">Week 4: Sorting Algorithms</p>
+              <p class="text-xs text-primary-400">In progress</p>
+            </div>
+            <i class="ri-arrow-down-s-line mod-chevron open text-primary-400 text-sm"></i>
+          </button>
+          <div class="mod-body open">
+            <div class="bg-primary-50/50 divide-y divide-primary-100/50">
+              <div class="lecture-item active flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(4,1,'Sorting Algorithms — Lecture','lecture')">
+                <i class="ri-play-circle-line text-primary-500 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-primary-700 font-medium flex-1">Lecture video</span>
+                <span class="text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded font-medium">Now</span>
+              </div>
+              <div class="lecture-item flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(4,2,'Sorting Notes PDF','pdf')">
+                <i class="ri-file-pdf-line text-red-400 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-slate-600 flex-1">Lecture notes</span>
+              </div>
+              <div class="lecture-item flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(4,3,'Week 4 Assignment','assignment')">
+                <i class="ri-file-list-3-line text-amber-400 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-slate-600 flex-1">Assignment</span>
+                <span class="text-xs text-amber-500 font-semibold">Due Sep 27</span>
+              </div>
+              <div class="lecture-item flex items-center gap-2.5 px-4 py-2.5 cursor-pointer" onclick="loadLecture(4,4,'Week 4 Quiz','quiz')">
+                <i class="ri-questionnaire-line text-amber-400 text-sm flex-shrink-0"></i>
+                <span class="text-xs text-slate-600 flex-1">Quiz</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modules 5–8: Locked -->
+        {% for i in "5678" %}
+        <div>
+          <button class="w-full flex items-center gap-3 p-3.5 hover:bg-slate-50 transition text-left opacity-60 cursor-not-allowed">
+            <div class="w-6 h-6 rounded-lg bg-slate-200 flex items-center justify-center flex-shrink-0">
+              <i class="ri-lock-line text-slate-400 text-xs"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium text-slate-500 truncate">Week {{ forloop.counter|add:"4" }}:
+                {% if forloop.counter == 1 %}Searching Algorithms
+                {% elif forloop.counter == 2 %}Trees & Binary Trees
+                {% elif forloop.counter == 3 %}Heaps & Priority Queues
+                {% else %}Graphs Part 1{% endif %}
+              </p>
+              <p class="text-xs text-slate-400">Locked</p>
+            </div>
+          </button>
+        </div>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MAIN CONTENT AREA
+  ════════════════════════════════════ -->
+  <div class="space-y-5">
+
+    <!-- VIDEO / CONTENT PLAYER -->
+    <div class="video-area reveal" id="content-player">
+      <!-- Default: video placeholder -->
+      <div id="video-placeholder" class="w-full h-full flex flex-col items-center justify-center p-8 text-center" style="aspect-ratio:16/9">
+        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-4 cursor-pointer hover:bg-white/20 transition" onclick="playVideo()">
+          <i class="ri-play-fill text-white text-3xl pl-1"></i>
+        </div>
+        <p class="text-white font-semibold text-lg mb-1">Week 4: Sorting Algorithms</p>
+        <p class="text-slate-400 text-sm">45 min · Prof. Pomona Sprout</p>
+        <div class="flex items-center gap-3 mt-4">
+          <span class="text-xs text-slate-500 bg-white/10 px-3 py-1.5 rounded-full">Merge Sort</span>
+          <span class="text-xs text-slate-500 bg-white/10 px-3 py-1.5 rounded-full">Quick Sort</span>
+          <span class="text-xs text-slate-500 bg-white/10 px-3 py-1.5 rounded-full">Heap Sort</span>
+        </div>
+      </div>
+
+      <!-- Video controls bar -->
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+        <div class="mb-2 h-1 bg-white/20 rounded-full overflow-hidden cursor-pointer">
+          <div id="video-progress" class="h-full bg-primary-400 rounded-full" style="width:0%"></div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button onclick="playVideo()" class="text-white hover:text-primary-300 transition">
+              <i id="play-icon" class="ri-play-fill text-xl"></i>
+            </button>
+            <span class="text-xs text-slate-400" id="video-time">0:00 / 45:00</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="text-white/60 hover:text-white transition text-sm"><i class="ri-speed-line"></i></button>
+            <button class="text-white/60 hover:text-white transition text-sm"><i class="ri-fullscreen-line"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LECTURE TITLE + NAV -->
+    <div class="flex items-center justify-between gap-4 reveal">
+      <div>
+        <h2 class="font-bold text-slate-800 text-lg" id="lecture-title">Week 4: Sorting Algorithms</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Algorithms 101 · Prof. Pomona Sprout · 45 min</p>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button onclick="prevLecture()" class="nav-btn inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:border-primary-300 hover:text-primary-600 transition px-3 py-2 rounded-xl">
+          <i class="ri-arrow-left-line"></i> Prev
+        </button>
+        <button onclick="markComplete()" id="complete-btn"
+          class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition px-3 py-2 rounded-xl">
+          <i class="ri-checkbox-circle-line"></i> Mark complete
+        </button>
+        <button onclick="nextLecture()" class="nav-btn inline-flex items-center gap-1.5 text-xs font-medium text-white bg-primary-500 hover:bg-primary-600 transition px-3 py-2 rounded-xl">
+          Next <i class="ri-arrow-right-line"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTENT TABS -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal">
+      <div class="flex items-center border-b border-slate-100 px-5 gap-1">
+        <button onclick="showContentTab('notes')" id="ctab-notes"
+          class="content-tab active text-sm font-medium text-primary-600 px-3 py-3.5 border-b-2 border-primary-500">
+          <i class="ri-sticky-note-line mr-1.5"></i>Notes
+        </button>
+        <button onclick="showContentTab('resources')" id="ctab-resources"
+          class="content-tab text-sm font-medium text-slate-500 px-3 py-3.5 border-b-2 border-transparent hover:text-slate-700">
+          <i class="ri-folder-line mr-1.5"></i>Resources
+        </button>
+        <button onclick="showContentTab('assignment')" id="ctab-assignment"
+          class="content-tab text-sm font-medium text-slate-500 px-3 py-3.5 border-b-2 border-transparent hover:text-slate-700">
+          <i class="ri-file-list-3-line mr-1.5"></i>Assignment
+        </button>
+        <button onclick="showContentTab('discussion')" id="ctab-discussion"
+          class="content-tab text-sm font-medium text-slate-500 px-3 py-3.5 border-b-2 border-transparent hover:text-slate-700">
+          <i class="ri-chat-1-line mr-1.5"></i>Discussion
+        </button>
+      </div>
+
+      <!-- NOTES -->
+      <div id="cpanel-notes" class="p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-slate-700 text-sm">Lecture Notes</h3>
+          <div class="flex items-center gap-2">
+            <button onclick="saveNote()" class="text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-3 py-1.5 rounded-lg">
+              <i class="ri-save-line mr-1"></i>Save
+            </button>
+          </div>
+        </div>
+        <div id="note-editor" contenteditable="true"
+          class="min-h-32 p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm text-slate-700 leading-relaxed focus:border-primary-300 focus:bg-white transition-all"
+          placeholder="Take notes here...">
+          <p><strong>Sorting Algorithms — Week 4</strong></p>
+          <p>Key algorithms covered:</p>
+          <ul>
+            <li>Merge Sort — O(n log n) time, O(n) space</li>
+            <li>Quick Sort — O(n log n) avg, O(n²) worst case</li>
+            <li>Heap Sort — O(n log n) time, O(1) space</li>
+          </ul>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">Notes are saved to your browser automatically.</p>
+      </div>
+
+      <!-- RESOURCES -->
+      <div id="cpanel-resources" class="p-5 hidden">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Week 4 Resources</h3>
+        <div class="space-y-2">
+          <a href="#" class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-primary-50 border border-slate-100 hover:border-primary-100 transition group">
+            <div class="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i class="ri-file-pdf-line text-red-500 text-lg"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-700 group-hover:text-primary-700">Week 4 Lecture Notes.pdf</p>
+              <p class="text-xs text-slate-400">2.4 MB · PDF</p>
+            </div>
+            <i class="ri-download-line text-slate-400 group-hover:text-primary-500 transition"></i>
+          </a>
+          <a href="#" class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-primary-50 border border-slate-100 hover:border-primary-100 transition group">
+            <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i class="ri-code-s-slash-line text-emerald-600 text-lg"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-700 group-hover:text-primary-700">sorting_examples.py</p>
+              <p class="text-xs text-slate-400">8 KB · Python</p>
+            </div>
+            <i class="ri-download-line text-slate-400 group-hover:text-primary-500 transition"></i>
+          </a>
+          <a href="#" class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-primary-50 border border-slate-100 hover:border-primary-100 transition group">
+            <div class="w-9 h-9 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <i class="ri-slideshow-line text-primary-600 text-lg"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-700 group-hover:text-primary-700">Week4_Slides.pptx</p>
+              <p class="text-xs text-slate-400">5.1 MB · PowerPoint</p>
+            </div>
+            <i class="ri-download-line text-slate-400 group-hover:text-primary-500 transition"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- ASSIGNMENT -->
+      <div id="cpanel-assignment" class="p-5 hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-slate-700 text-sm">Week 4 Assignment</h3>
+          <span class="text-xs font-semibold text-amber-500 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full flex items-center gap-1">
+            <i class="ri-time-line"></i> Due Sep 27
+          </span>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-100">
+          <h4 class="font-semibold text-slate-800 text-sm mb-2">Sorting Algorithm Analysis</h4>
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">
+            Implement Merge Sort and Quick Sort in Python. Compare their performance on arrays of size 100, 1000, and 10000. Write a 2-page analysis report discussing time complexity and your empirical findings.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg">Python</span>
+            <span class="text-xs bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg">Report (2 pages)</span>
+            <span class="text-xs bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg">Max 100 points</span>
+          </div>
+        </div>
+        <form method="POST" action="{% url 'assignments' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="border-2 border-dashed border-slate-200 hover:border-primary-300 transition rounded-xl p-6 text-center cursor-pointer mb-3"
+               onclick="document.getElementById('file-upload').click()">
+            <i class="ri-upload-cloud-2-line text-3xl text-slate-300 mb-2"></i>
+            <p class="text-sm font-medium text-slate-600">Click to upload your submission</p>
+            <p class="text-xs text-slate-400 mt-0.5">PDF, ZIP, PY — Max 10MB</p>
+            <input type="file" id="file-upload" class="hidden" name="submission_file"/>
+          </div>
+          <button type="submit"
+            class="w-full bg-primary-500 hover:bg-primary-600 transition text-white font-semibold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+            <i class="ri-send-plane-line"></i> Submit Assignment
+          </button>
+        </form>
+      </div>
+
+      <!-- DISCUSSION -->
+      <div id="cpanel-discussion" class="p-5 hidden">
+        <h3 class="font-semibold text-slate-700 text-sm mb-4">Discussion</h3>
+        <div class="space-y-4 mb-5">
+          <div class="flex gap-3">
+            <img src="https://ui-avatars.com/api/?name=H+G&background=818cf8&color=fff&size=32" class="w-8 h-8 rounded-full flex-shrink-0"/>
+            <div class="flex-1 bg-slate-50 rounded-xl p-3">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-xs font-semibold text-slate-700">Hermione Granger</p>
+                <p class="text-xs text-slate-400">2 hours ago</p>
+              </div>
+              <p class="text-sm text-slate-600">Why does Quick Sort have O(n²) worst case? When does that happen?</p>
+              <button class="text-xs text-primary-500 mt-2 font-medium hover:underline">Reply</button>
+            </div>
+          </div>
+          <div class="flex gap-3 ml-10">
+            <img src="https://ui-avatars.com/api/?name=P+S&background=4f46e5&color=fff&size=32" class="w-8 h-8 rounded-full flex-shrink-0"/>
+            <div class="flex-1 bg-primary-50 rounded-xl p-3 border border-primary-100">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="text-xs font-semibold text-primary-700">Prof. Pomona Sprout</p>
+                <span class="text-xs bg-primary-200 text-primary-700 px-1.5 py-0.5 rounded font-semibold">Instructor</span>
+                <p class="text-xs text-slate-400">1 hour ago</p>
+              </div>
+              <p class="text-sm text-slate-600">Great question! Worst case happens when the pivot is always the smallest or largest element — e.g. already-sorted arrays with naive pivot selection.</p>
+            </div>
+          </div>
+        </div>
+        <!-- Post comment -->
+        <div class="flex gap-3">
+          <img src="https://ui-avatars.com/api/?name=J+D&background=4f46e5&color=fff&size=32" class="w-8 h-8 rounded-full flex-shrink-0"/>
+          <div class="flex-1 relative">
+            <textarea rows="2" placeholder="Ask a question or share a thought..."
+              class="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:border-primary-300 focus:bg-white transition-all pr-12"></textarea>
+            <button class="absolute right-3 bottom-3 text-primary-500 hover:text-primary-600 transition">
+              <i class="ri-send-plane-fill text-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Mobile sidebar toggle
+  function toggleMobileSidebar() {
+    document.getElementById('sidebar-panel').classList.toggle('mobile-open');
+  }
+
+  // Module accordion
+  function toggleMod(btn) {
+    const body    = btn.nextElementSibling;
+    const chevron = btn.querySelector('.mod-chevron');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+  }
+
+  // Load lecture
+  function loadLecture(week, item, title, type) {
+    document.querySelectorAll('.lecture-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById('lecture-title').textContent = title;
+  }
+
+  // Play/pause mock
+  let playing = false;
+  let progress = 0;
+  let timer;
+  function playVideo() {
+    playing = !playing;
+    document.getElementById('play-icon').className = playing ? 'ri-pause-fill text-xl' : 'ri-play-fill text-xl';
+    if (playing) {
+      timer = setInterval(() => {
+        progress = Math.min(progress + 0.5, 100);
+        document.getElementById('video-progress').style.width = progress + '%';
+        const mins = Math.floor(progress * 45 / 100);
+        const secs = Math.floor((progress * 45 / 100 - mins) * 60);
+        document.getElementById('video-time').textContent =
+          `${mins}:${String(secs).padStart(2,'0')} / 45:00`;
+        if (progress >= 100) clearInterval(timer);
+      }, 200);
+    } else {
+      clearInterval(timer);
+    }
+  }
+
+  // Mark complete
+  function markComplete() {
+    const btn = document.getElementById('complete-btn');
+    btn.innerHTML = '<i class="ri-checkbox-circle-fill"></i> Completed!';
+    btn.classList.replace('bg-emerald-500','bg-emerald-600');
+    btn.disabled = true;
+  }
+
+  // Prev / Next
+  function prevLecture() { alert('Going to previous lecture'); }
+  function nextLecture() { alert('Going to next lecture'); }
+
+  // Content tabs
+  const ctabs = ['notes','resources','assignment','discussion'];
+  function showContentTab(name) {
+    ctabs.forEach(t => {
+      document.getElementById('cpanel-' + t).classList.add('hidden');
+      const btn = document.getElementById('ctab-' + t);
+      btn.classList.remove('active','text-primary-600','border-primary-500');
+      btn.classList.add('text-slate-500','border-transparent');
+    });
+    document.getElementById('cpanel-' + name).classList.remove('hidden');
+    const active = document.getElementById('ctab-' + name);
+    active.classList.add('active','text-primary-600','border-primary-500');
+    active.classList.remove('text-slate-500','border-transparent');
+  }
+
+  // Auto-save notes
+  let saveTimer;
+  document.getElementById('note-editor').addEventListener('input', () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      localStorage.setItem('notes_week4', document.getElementById('note-editor').innerHTML);
+    }, 1000);
+  });
+  const saved = localStorage.getItem('notes_week4');
+  if (saved) document.getElementById('note-editor').innerHTML = saved;
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e,i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

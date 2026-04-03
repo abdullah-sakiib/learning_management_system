@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Content — Algorithms 101 — EduFlow{% endblock %}
+{% block page_title %}Manage Content{% endblock %}
+{% block page_subtitle %}Algorithms 101 — organize lectures and materials{% endblock %}
+{% block nav_courses %}active{% endblock %}
+{% block user_name %}Prof. Pomona Sprout{% endblock %}
+{% block user_role %}Instructor{% endblock %}
+{% block topbar_user %}Prof. Sprout{% endblock %}
+{% block topbar_role %}Instructor{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); }
+
+  /* Module card */
+  .module-card {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .module-card:hover { border-color: #c7d2fe; }
+  .module-card.dragging {
+    opacity: 0.5;
+    border: 2px dashed #6366f1;
+  }
+
+  /* Drag handle */
+  .drag-handle { cursor: grab; }
+  .drag-handle:active { cursor: grabbing; }
+
+  /* Lecture row */
+  .lec-row {
+    transition: background 0.15s ease;
+  }
+  .lec-row:hover { background: #f8f7ff; }
+
+  /* Module collapse */
+  .mod-body {
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .mod-body.collapsed { max-height: 0; }
+  .collapse-icon { transition: transform 0.3s ease; }
+  .collapse-icon.collapsed { transform: rotate(-90deg); }
+
+  /* File upload zone */
+  .upload-zone {
+    transition: all 0.2s ease;
+    border: 2px dashed #e2e8f0;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #a5b4fc;
+    background: #f5f3ff;
+  }
+
+  /* Publish badge */
+  .badge-published { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+  .badge-draft     { background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb + actions -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 reveal">
+  <div class="flex items-center gap-2 text-xs text-slate-400">
+    <a href="{% url 'dashboard' %}" class="hover:text-primary-600 transition">Dashboard</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <a href="{% url 'course_detail' 1 %}" class="hover:text-primary-600 transition">Algorithms 101</a>
+    <i class="ri-arrow-right-s-line"></i>
+    <span class="text-slate-600 font-medium">Manage Content</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'course_detail' 1 %}"
+       class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition px-3 py-2 rounded-xl">
+      <i class="ri-eye-line"></i> Preview
+    </a>
+    <button onclick="saveAll()"
+      class="btn-primary inline-flex items-center gap-1.5 text-white font-semibold text-xs px-4 py-2 rounded-xl">
+      <i class="ri-save-line"></i> Save all changes
+    </button>
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── LEFT: Module manager (2/3) ───── -->
+  <div class="lg:col-span-2 space-y-4">
+
+    <!-- Course info bar -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-wrap items-center gap-4 reveal">
+      <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+        <i class="ri-code-s-slash-line text-indigo-600 text-lg"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-slate-800 text-sm">Algorithms 101</p>
+        <p class="text-xs text-slate-400">84 students · 14 weeks · 12 lectures</p>
+      </div>
+      <span class="badge-published text-xs font-semibold px-3 py-1.5 rounded-full">Published</span>
+      <a href="{% url 'instructor_create_course' %}"
+         class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-3 py-2 rounded-xl">
+        <i class="ri-edit-line"></i> Edit details
+      </a>
+    </div>
+
+    <!-- Add module button -->
+    <button onclick="addModule()"
+      class="w-full flex items-center justify-center gap-2 border-2 border-dashed border-primary-200 text-primary-600 font-medium text-sm py-3.5 rounded-2xl hover:bg-primary-50 hover:border-primary-300 transition reveal">
+      <i class="ri-add-circle-line text-lg"></i> Add new module
+    </button>
+
+    <!-- ═══ MODULE LIST ═══ -->
+    <div id="modules-list" class="space-y-4">
+
+      <!-- MODULE 1 -->
+      <div class="module-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal" draggable="true" data-id="1">
+        <!-- Module header -->
+        <div class="flex items-center gap-3 p-4 border-b border-slate-100 bg-slate-50/50">
+          <i class="drag-handle ri-drag-move-2-line text-slate-300 text-xl flex-shrink-0"></i>
+          <div class="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-check-line text-emerald-600 text-sm"></i>
+          </div>
+          <input type="text" value="Week 1: Introduction to Algorithms"
+            class="flex-1 bg-transparent text-sm font-semibold text-slate-800 focus:outline-none focus:ring-0 min-w-0"
+            placeholder="Module title..."/>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="text-xs text-slate-400">3 items</span>
+            <button onclick="toggleModule(this)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 transition rounded-lg hover:bg-slate-100">
+              <i class="collapse-icon ri-arrow-down-s-line text-base"></i>
+            </button>
+            <button onclick="deleteModule(this)" class="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-400 transition rounded-lg hover:bg-red-50">
+              <i class="ri-delete-bin-line text-base"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Lecture items -->
+        <div class="mod-body">
+          <div class="divide-y divide-slate-50">
+
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-play-circle-line text-primary-400 flex-shrink-0"></i>
+              <input type="text" value="What is an Algorithm?"
+                class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-slate-400 flex-shrink-0">Video</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-file-pdf-line text-red-400 flex-shrink-0"></i>
+              <input type="text" value="Week 1 Lecture Notes.pdf"
+                class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-slate-400 flex-shrink-0">PDF</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-questionnaire-line text-amber-400 flex-shrink-0"></i>
+              <input type="text" value="Week 1 Quiz"
+                class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-slate-400 flex-shrink-0">Quiz</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+
+          </div>
+          <!-- Add item to module -->
+          <div class="px-4 py-3 bg-slate-50/50">
+            <div class="flex flex-wrap gap-2">
+              <button onclick="addLecture(this, 'video')"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-play-circle-line"></i> Add video
+              </button>
+              <button onclick="addLecture(this, 'pdf')"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-file-pdf-line"></i> Add PDF
+              </button>
+              <button onclick="addLecture(this, 'assignment')"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-file-list-3-line"></i> Add assignment
+              </button>
+              <button onclick="addLecture(this, 'quiz')"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-questionnaire-line"></i> Add quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODULE 4 (current) -->
+      <div class="module-card bg-white rounded-2xl border border-primary-200 shadow-sm overflow-hidden reveal" draggable="true" data-id="4">
+        <div class="flex items-center gap-3 p-4 border-b border-primary-100 bg-primary-50/50">
+          <i class="drag-handle ri-drag-move-2-line text-slate-300 text-xl flex-shrink-0"></i>
+          <div class="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <span class="text-primary-600 text-xs font-bold">4</span>
+          </div>
+          <input type="text" value="Week 4: Sorting Algorithms"
+            class="flex-1 bg-transparent text-sm font-semibold text-slate-800 focus:outline-none min-w-0"/>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="text-xs text-slate-400">4 items</span>
+            <button onclick="toggleModule(this)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 transition rounded-lg hover:bg-slate-100">
+              <i class="collapse-icon ri-arrow-down-s-line text-base"></i>
+            </button>
+            <button onclick="deleteModule(this)" class="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-400 transition rounded-lg hover:bg-red-50">
+              <i class="ri-delete-bin-line text-base"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mod-body">
+          <div class="divide-y divide-slate-50">
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-play-circle-line text-primary-400 flex-shrink-0"></i>
+              <input type="text" value="Merge Sort & Quick Sort" class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-slate-400 flex-shrink-0">Video</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-file-pdf-line text-red-400 flex-shrink-0"></i>
+              <input type="text" value="Week 4 Lecture Notes.pdf" class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-slate-400 flex-shrink-0">PDF</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-file-list-3-line text-amber-400 flex-shrink-0"></i>
+              <input type="text" value="Sorting Algorithm Analysis (Assignment)" class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-amber-500 font-semibold flex-shrink-0">Due Sep 27</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+            <div class="lec-row flex items-center gap-3 px-4 py-3">
+              <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+              <i class="ri-questionnaire-line text-amber-400 flex-shrink-0"></i>
+              <input type="text" value="Week 4 Quiz" class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0"/>
+              <span class="text-xs text-slate-400 flex-shrink-0">Quiz</span>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+                <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-3 bg-slate-50/50">
+            <div class="flex flex-wrap gap-2">
+              <button onclick="addLecture(this, 'video')" class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-play-circle-line"></i> Add video
+              </button>
+              <button onclick="addLecture(this, 'pdf')" class="inline-flex items-center gap-1.5 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-file-pdf-line"></i> Add PDF
+              </button>
+              <button onclick="addLecture(this, 'assignment')" class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-file-list-3-line"></i> Add assignment
+              </button>
+              <button onclick="addLecture(this, 'quiz')" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition px-3 py-1.5 rounded-lg">
+                <i class="ri-questionnaire-line"></i> Add quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- end modules list -->
+
+  </div>
+
+  <!-- ───── RIGHT: Upload + Stats ───── -->
+  <div class="space-y-5">
+
+    <!-- Upload files -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h3 class="font-semibold text-slate-700 text-sm mb-3 flex items-center gap-2">
+        <i class="ri-upload-cloud-2-line text-primary-500"></i> Upload Files
+      </h3>
+      <div class="upload-zone rounded-xl p-5 text-center cursor-pointer mb-3"
+           id="upload-zone"
+           onclick="document.getElementById('bulk-upload').click()"
+           ondragover="this.classList.add('dragover'); event.preventDefault()"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleDrop(event)">
+        <i class="ri-upload-cloud-2-line text-3xl text-slate-300 mb-2"></i>
+        <p class="text-xs font-medium text-slate-600">Drop files here or click to upload</p>
+        <p class="text-xs text-slate-400 mt-0.5">PDF, MP4, PPTX, ZIP — Max 100MB</p>
+        <input type="file" id="bulk-upload" class="hidden" multiple onchange="showUploadedFiles(this)"/>
+      </div>
+      <!-- Uploaded files list -->
+      <div id="uploaded-files" class="space-y-2"></div>
+    </div>
+
+    <!-- Course stats -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h3 class="font-semibold text-slate-700 text-sm mb-4">Content Summary</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500 flex items-center gap-1.5"><i class="ri-video-line text-primary-400"></i> Videos</span>
+          <span class="text-xs font-bold text-slate-700">8</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500 flex items-center gap-1.5"><i class="ri-file-pdf-line text-red-400"></i> PDFs</span>
+          <span class="text-xs font-bold text-slate-700">12</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500 flex items-center gap-1.5"><i class="ri-file-list-3-line text-amber-400"></i> Assignments</span>
+          <span class="text-xs font-bold text-slate-700">6</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500 flex items-center gap-1.5"><i class="ri-questionnaire-line text-emerald-400"></i> Quizzes</span>
+          <span class="text-xs font-bold text-slate-700">12</span>
+        </div>
+        <div class="border-t border-slate-100 pt-3 flex items-center justify-between">
+          <span class="text-xs text-slate-500">Total items</span>
+          <span class="text-xs font-bold text-primary-600">38</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick nav -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+      <h3 class="font-semibold text-slate-700 text-sm mb-3">Other Courses</h3>
+      <div class="space-y-2">
+        <a href="{% url 'instructor_manage_content' 2 %}" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition">
+          <div class="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-database-2-line text-violet-600 text-xs"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Introduction to Database</span>
+        </a>
+        <a href="{% url 'instructor_manage_content' 3 %}" class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition">
+          <div class="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-pie-chart-line text-emerald-600 text-xs"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Basic Mathematics</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Collapse/expand module body
+  function toggleModule(btn) {
+    const card = btn.closest('.module-card');
+    const body = card.querySelector('.mod-body');
+    const icon = btn.querySelector('.collapse-icon');
+    body.classList.toggle('collapsed');
+    icon.classList.toggle('collapsed');
+  }
+
+  // Delete module with confirm
+  function deleteModule(btn) {
+    if (confirm('Delete this module and all its content?')) {
+      btn.closest('.module-card').remove();
+    }
+  }
+
+  // Add new module
+  function addModule() {
+    const id = Date.now();
+    const div = document.createElement('div');
+    div.className = 'module-card bg-white rounded-2xl border border-primary-200 shadow-sm overflow-hidden';
+    div.draggable = true;
+    div.dataset.id = id;
+    div.innerHTML = `
+      <div class="flex items-center gap-3 p-4 border-b border-slate-100 bg-slate-50/50">
+        <i class="drag-handle ri-drag-move-2-line text-slate-300 text-xl flex-shrink-0"></i>
+        <div class="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <i class="ri-add-line text-slate-400 text-sm"></i>
+        </div>
+        <input type="text" class="flex-1 bg-transparent text-sm font-semibold text-slate-800 focus:outline-none min-w-0 border-b border-dashed border-slate-300 pb-0.5" placeholder="Module title..." autofocus/>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button onclick="toggleModule(this)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 transition rounded-lg hover:bg-slate-100">
+            <i class="collapse-icon ri-arrow-down-s-line text-base"></i>
+          </button>
+          <button onclick="deleteModule(this)" class="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-400 transition rounded-lg hover:bg-red-50">
+            <i class="ri-delete-bin-line text-base"></i>
+          </button>
+        </div>
+      </div>
+      <div class="mod-body">
+        <div class="px-4 py-4 text-center text-xs text-slate-400">No items yet — add content below</div>
+        <div class="px-4 py-3 bg-slate-50/50">
+          <div class="flex flex-wrap gap-2">
+            <button onclick="addLecture(this,'video')" class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 transition px-3 py-1.5 rounded-lg"><i class="ri-play-circle-line"></i> Add video</button>
+            <button onclick="addLecture(this,'pdf')" class="inline-flex items-center gap-1.5 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 transition px-3 py-1.5 rounded-lg"><i class="ri-file-pdf-line"></i> Add PDF</button>
+            <button onclick="addLecture(this,'assignment')" class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 transition px-3 py-1.5 rounded-lg"><i class="ri-file-list-3-line"></i> Add assignment</button>
+            <button onclick="addLecture(this,'quiz')" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition px-3 py-1.5 rounded-lg"><i class="ri-questionnaire-line"></i> Add quiz</button>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('modules-list').appendChild(div);
+    div.querySelector('input').focus();
+  }
+
+  // Add lecture item to a module
+  function addLecture(btn, type) {
+    const iconMap = {
+      video:      { icon: 'ri-play-circle-line text-primary-400', label: 'Video',      placeholder: 'e.g. Lecture: Introduction...' },
+      pdf:        { icon: 'ri-file-pdf-line text-red-400',         label: 'PDF',        placeholder: 'e.g. Week 1 Notes.pdf' },
+      assignment: { icon: 'ri-file-list-3-line text-amber-400',    label: 'Assignment', placeholder: 'e.g. Week 1 Assignment' },
+      quiz:       { icon: 'ri-questionnaire-line text-amber-400',  label: 'Quiz',       placeholder: 'e.g. Week 1 Quiz' },
+    };
+    const t = iconMap[type];
+    const card = btn.closest('.module-card');
+    let divList = card.querySelector('.divide-y');
+    if (!divList) {
+      // Remove "no items" placeholder
+      const placeholder = card.querySelector('.mod-body > .px-4.py-4');
+      if (placeholder) placeholder.remove();
+      divList = document.createElement('div');
+      divList.className = 'divide-y divide-slate-50';
+      card.querySelector('.mod-body').insertBefore(divList, card.querySelector('.px-4.py-3.bg-slate-50'));
+    }
+    const row = document.createElement('div');
+    row.className = 'lec-row flex items-center gap-3 px-4 py-3';
+    row.innerHTML = `
+      <i class="drag-handle ri-drag-move-2-line text-slate-200 flex-shrink-0"></i>
+      <i class="${t.icon} flex-shrink-0"></i>
+      <input type="text" class="flex-1 bg-transparent text-sm text-slate-700 focus:outline-none min-w-0" placeholder="${t.placeholder}" autofocus/>
+      <span class="text-xs text-slate-400 flex-shrink-0">${t.label}</span>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <button class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-primary-500 transition"><i class="ri-edit-line text-sm"></i></button>
+        <button onclick="this.closest('.lec-row').remove()" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition"><i class="ri-delete-bin-line text-sm"></i></button>
+      </div>`;
+    divList.appendChild(row);
+    row.querySelector('input').focus();
+  }
+
+  // File upload display
+  function showUploadedFiles(input) {
+    const container = document.getElementById('uploaded-files');
+    [...input.files].forEach(file => {
+      const div = document.createElement('div');
+      div.className = 'flex items-center gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100';
+      const ext = file.name.split('.').pop().toLowerCase();
+      const icon = ext === 'pdf' ? 'ri-file-pdf-line text-red-400'
+                 : ext === 'mp4' ? 'ri-play-circle-line text-primary-400'
+                 : 'ri-file-line text-slate-400';
+      div.innerHTML = `
+        <i class="${icon} flex-shrink-0"></i>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-medium text-slate-700 truncate">${file.name}</p>
+          <p class="text-xs text-slate-400">${(file.size/1024/1024).toFixed(1)} MB</p>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-400 transition">
+          <i class="ri-close-line text-sm"></i>
+        </button>`;
+      container.appendChild(div);
+    });
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('dragover');
+    const dt = e.dataTransfer;
+    showUploadedFiles({ files: dt.files });
+  }
+
+  // Save all — visual feedback
+  function saveAll() {
+    const btn = event.currentTarget;
+    btn.innerHTML = '<i class="ri-check-line"></i> Saved!';
+    btn.classList.replace('btn-primary','bg-emerald-500');
+    btn.style.boxShadow = '0 4px 14px rgba(34,197,94,0.3)';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="ri-save-line"></i> Save all changes';
+      btn.classList.replace('bg-emerald-500','btn-primary');
+      btn.style.boxShadow = '';
+    }, 2000);
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e,i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 60);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

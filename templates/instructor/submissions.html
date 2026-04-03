@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+
+{% block title %}Submissions — EduFlow{% endblock %}
+{% block page_title %}Submissions{% endblock %}
+{% block page_subtitle %}Review and grade student work{% endblock %}
+{% block nav_assignments %}active{% endblock %}
+{% block user_name %}Prof. Pomona Sprout{% endblock %}
+{% block user_role %}Instructor{% endblock %}
+{% block topbar_user %}Prof. Sprout{% endblock %}
+{% block topbar_role %}Instructor{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); }
+
+  /* Submission row */
+  .sub-row { transition: background 0.15s ease; cursor: pointer; }
+  .sub-row:hover { background: #f8f7ff; }
+  .sub-row.selected { background: #eef2ff; border-left: 3px solid #4f46e5; }
+
+  /* Status badges */
+  .badge-pending  { background:#fffbeb; color:#d97706; border:1px solid #fde68a; }
+  .badge-graded   { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+  .badge-late     { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+  .badge-resubmit { background:#f0f9ff; color:#0284c7; border:1px solid #bae6fd; }
+
+  /* Grade input */
+  .grade-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+
+  /* Grade panel slide */
+  #grade-panel {
+    transition: all 0.3s ease;
+  }
+
+  /* Filter pill */
+  .filter-pill { transition: all 0.2s ease; }
+  .filter-pill.active { background: #4f46e5; color: white; border-color: #4f46e5; }
+
+  /* Rubric bar */
+  .rubric-bar input[type=range] {
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: #e2e8f0;
+    outline: none;
+  }
+  .rubric-bar input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4f46e5;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.4);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── LEFT: Submissions list (2/3) ───── -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Filters + search -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 reveal">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <i class="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="sub-search" placeholder="Search by student name or assignment..."
+            oninput="searchSubs(this.value)"
+            class="input-field w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all"/>
+        </div>
+        <select id="course-filter" onchange="filterSubs()" class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+          <option value="">All courses</option>
+          <option>Algorithms 101</option>
+          <option>Introduction to Database</option>
+          <option>Basic Mathematics</option>
+        </select>
+        <select id="status-filter" onchange="filterSubs()" class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="graded">Graded</option>
+          <option value="late">Late</option>
+        </select>
+      </div>
+      <!-- Status pills -->
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button onclick="setStatusFilter('all')" id="pill-all" class="filter-pill active text-xs font-semibold border border-slate-200 px-3 py-1.5 rounded-full">All <span class="ml-1 font-normal text-slate-400">8</span></button>
+        <button onclick="setStatusFilter('pending')" id="pill-pending" class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Pending <span class="ml-1 font-normal text-slate-400">3</span></button>
+        <button onclick="setStatusFilter('graded')" id="pill-graded" class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Graded <span class="ml-1 font-normal text-slate-400">4</span></button>
+        <button onclick="setStatusFilter('late')" id="pill-late" class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Late <span class="ml-1 font-normal text-slate-400">1</span></button>
+      </div>
+    </div>
+
+    <!-- Submissions table -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="sub-table">
+          <thead>
+            <tr class="text-xs text-slate-400 font-semibold uppercase tracking-wide border-b border-slate-100 bg-slate-50/50">
+              <th class="text-left px-5 py-3">Student</th>
+              <th class="text-left px-4 py-3">Assignment</th>
+              <th class="text-left px-4 py-3">Course</th>
+              <th class="text-left px-4 py-3">Submitted</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Score</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50" id="sub-tbody">
+
+            <!-- Row 1: Pending -->
+            <tr class="sub-row" data-status="pending" data-student="Hermione Granger"
+                onclick="openGrading('Hermione Granger', 'Week 5 — Sorting Algorithms', 'Algorithms 101', 'pending', '')">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=H+G&background=818cf8&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Hermione Granger</p>
+                    <p class="text-xs text-slate-400">ID: 2100639</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[160px] truncate">Week 5 — Sorting Algorithms</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">Algo 101</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-slate-500">2 hours ago</p></td>
+              <td class="px-4 py-3.5"><span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span></td>
+              <td class="px-4 py-3.5"><span class="text-xs text-slate-400">—</span></td>
+            </tr>
+
+            <!-- Row 2: Pending -->
+            <tr class="sub-row" data-status="pending" data-student="Ron Weasley"
+                onclick="openGrading('Ron Weasley', 'Week 5 — Normalization', 'Database', 'pending', '')">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=R+W&background=4f46e5&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Ron Weasley</p>
+                    <p class="text-xs text-slate-400">ID: 2100640</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[160px] truncate">Week 5 — Normalization</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-violet-50 text-violet-600 font-medium px-2 py-0.5 rounded-full">Database</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-slate-500">5 hours ago</p></td>
+              <td class="px-4 py-3.5"><span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span></td>
+              <td class="px-4 py-3.5"><span class="text-xs text-slate-400">—</span></td>
+            </tr>
+
+            <!-- Row 3: Late -->
+            <tr class="sub-row" data-status="late" data-student="Harry Potter"
+                onclick="openGrading('Harry Potter', 'Week 4 — Recursion Quiz', 'Algorithms 101', 'late', '')">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=H+P&background=10b981&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Harry Potter</p>
+                    <p class="text-xs text-slate-400">ID: 2100641</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[160px] truncate">Week 4 — Recursion Quiz</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">Algo 101</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-red-400 font-medium">2 days ago</p></td>
+              <td class="px-4 py-3.5"><span class="badge-late text-xs font-semibold px-2 py-0.5 rounded-full">Late</span></td>
+              <td class="px-4 py-3.5"><span class="text-xs text-slate-400">—</span></td>
+            </tr>
+
+            <!-- Row 4: Graded -->
+            <tr class="sub-row" data-status="graded" data-student="Draco Malfoy"
+                onclick="openGrading('Draco Malfoy', 'Week 3 — Arrays', 'Algorithms 101', 'graded', '88')">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=D+M&background=64748b&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Draco Malfoy</p>
+                    <p class="text-xs text-slate-400">ID: 2100642</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[160px] truncate">Week 3 — Arrays & Linked Lists</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">Algo 101</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-slate-500">3 days ago</p></td>
+              <td class="px-4 py-3.5"><span class="badge-graded text-xs font-semibold px-2 py-0.5 rounded-full">Graded</span></td>
+              <td class="px-4 py-3.5"><span class="text-xs font-bold text-emerald-600">88/100</span></td>
+            </tr>
+
+            <!-- Row 5: Graded -->
+            <tr class="sub-row" data-status="graded" data-student="Luna Lovegood"
+                onclick="openGrading('Luna Lovegood', 'Week 3 — ER Diagrams', 'Database', 'graded', '95')">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=L+L&background=a78bfa&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Luna Lovegood</p>
+                    <p class="text-xs text-slate-400">ID: 2100643</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[160px] truncate">Week 3 — ER Diagrams</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-violet-50 text-violet-600 font-medium px-2 py-0.5 rounded-full">Database</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-slate-500">4 days ago</p></td>
+              <td class="px-4 py-3.5"><span class="badge-graded text-xs font-semibold px-2 py-0.5 rounded-full">Graded</span></td>
+              <td class="px-4 py-3.5"><span class="text-xs font-bold text-emerald-600">95/100</span></td>
+            </tr>
+
+            <!-- Pending row 3 -->
+            <tr class="sub-row" data-status="pending" data-student="Neville Longbottom"
+                onclick="openGrading('Neville Longbottom', 'Week 5 — Integration', 'Basic Mathematics', 'pending', '')">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name=N+L&background=f59e0b&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">Neville Longbottom</p>
+                    <p class="text-xs text-slate-400">ID: 2100644</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[160px] truncate">Week 5 — Integration Techniques</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-emerald-50 text-emerald-600 font-medium px-2 py-0.5 rounded-full">Maths</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-slate-500">1 day ago</p></td>
+              <td class="px-4 py-3.5"><span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span></td>
+              <td class="px-4 py-3.5"><span class="text-xs text-slate-400">—</span></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───── RIGHT: Grade panel ───── -->
+  <div id="grade-panel" class="space-y-4">
+
+    <!-- Empty state -->
+    <div id="grade-empty" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center reveal">
+      <div class="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i class="ri-edit-box-line text-primary-400 text-2xl"></i>
+      </div>
+      <p class="font-semibold text-slate-700 text-sm">Select a submission</p>
+      <p class="text-xs text-slate-400 mt-1">Click any row to open the grading panel.</p>
+    </div>
+
+    <!-- Grading form (shown on click) -->
+    <div id="grade-form" class="hidden space-y-4">
+
+      <!-- Student info -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <div class="flex items-center gap-3 mb-4">
+          <img id="gf-avatar" src="" class="w-10 h-10 rounded-xl object-cover"/>
+          <div>
+            <p class="font-semibold text-slate-800 text-sm" id="gf-name"></p>
+            <p class="text-xs text-slate-400" id="gf-assignment"></p>
+          </div>
+        </div>
+
+        <!-- Submitted file preview -->
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 mb-4 cursor-pointer hover:bg-primary-50 hover:border-primary-100 transition">
+          <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-file-pdf-line text-red-500"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-slate-700 truncate" id="gf-file">submission.pdf</p>
+            <p class="text-xs text-slate-400">Click to view</p>
+          </div>
+          <i class="ri-external-link-line text-slate-400"></i>
+        </div>
+
+        <!-- Score input -->
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Score <span class="text-red-400">*</span></label>
+          <div class="flex items-center gap-3">
+            <input type="number" id="gf-score" min="0" max="100" placeholder="0"
+              oninput="updateScoreBar(this.value)"
+              class="grade-input w-24 px-3.5 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-lg font-bold text-slate-800 text-center transition-all"/>
+            <span class="text-slate-400 font-medium">/ 100</span>
+            <div class="flex-1">
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="score-bar" class="h-full bg-primary-500 rounded-full transition-all duration-300" style="width:0%"></div>
+              </div>
+              <p class="text-xs text-slate-400 mt-1" id="score-label">Enter a score</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rubric sliders -->
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Rubric</label>
+          <div class="space-y-3">
+            <div class="rubric-bar">
+              <div class="flex items-center justify-between text-xs text-slate-600 mb-1">
+                <span>Correctness</span><span id="r1-val" class="font-semibold text-primary-600">50</span>
+              </div>
+              <input type="range" min="0" max="100" value="50" oninput="document.getElementById('r1-val').textContent=this.value; calcTotal()"/>
+            </div>
+            <div class="rubric-bar">
+              <div class="flex items-center justify-between text-xs text-slate-600 mb-1">
+                <span>Code quality</span><span id="r2-val" class="font-semibold text-primary-600">50</span>
+              </div>
+              <input type="range" min="0" max="100" value="50" oninput="document.getElementById('r2-val').textContent=this.value; calcTotal()"/>
+            </div>
+            <div class="rubric-bar">
+              <div class="flex items-center justify-between text-xs text-slate-600 mb-1">
+                <span>Documentation</span><span id="r3-val" class="font-semibold text-primary-600">50</span>
+              </div>
+              <input type="range" min="0" max="100" value="50" oninput="document.getElementById('r3-val').textContent=this.value; calcTotal()"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Feedback</label>
+          <textarea id="gf-feedback" rows="4" placeholder="Write your feedback here..."
+            class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 resize-none transition-all"></textarea>
+          <!-- Quick feedback chips -->
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" onclick="addFeedback('Great work overall!')"
+              class="text-xs text-slate-500 bg-slate-100 hover:bg-primary-50 hover:text-primary-600 transition px-2.5 py-1 rounded-lg">Great work!</button>
+            <button type="button" onclick="addFeedback('Needs more documentation.')"
+              class="text-xs text-slate-500 bg-slate-100 hover:bg-primary-50 hover:text-primary-600 transition px-2.5 py-1 rounded-lg">Needs documentation</button>
+            <button type="button" onclick="addFeedback('Please review the time complexity analysis.')"
+              class="text-xs text-slate-500 bg-slate-100 hover:bg-primary-50 hover:text-primary-600 transition px-2.5 py-1 rounded-lg">Review complexity</button>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex gap-2">
+          <button onclick="submitGrade()"
+            class="btn-primary flex-1 flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl text-sm">
+            <i class="ri-checkbox-circle-line"></i> Submit Grade
+          </button>
+          <button onclick="requestResubmit()"
+            class="flex-shrink-0 flex items-center justify-center gap-1.5 text-sm font-medium text-sky-600 border border-sky-200 hover:bg-sky-50 transition py-3 px-4 rounded-xl">
+            <i class="ri-refresh-line"></i> Resubmit
+          </button>
+        </div>
+      </div>
+
+      <!-- Grade summary -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Grading Summary</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-500">Graded today</span>
+            <span class="font-semibold text-slate-700">0</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-500">Still pending</span>
+            <span class="font-semibold text-amber-500">3</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-500">Avg. score (this week)</span>
+            <span class="font-semibold text-emerald-600">89/100</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openGrading(name, assignment, course, status, score) {
+    // Highlight selected row
+    document.querySelectorAll('.sub-row').forEach(r => r.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+
+    // Show grade form, hide empty state
+    document.getElementById('grade-empty').classList.add('hidden');
+    document.getElementById('grade-form').classList.remove('hidden');
+
+    // Populate
+    const initials = name.split(' ').map(n=>n[0]).join('+');
+    const colors   = ['4f46e5','818cf8','10b981','f59e0b','a78bfa','64748b'];
+    const color    = colors[Math.floor(Math.random() * colors.length)];
+    document.getElementById('gf-avatar').src  = `https://ui-avatars.com/api/?name=${initials}&background=${color}&color=fff&size=64`;
+    document.getElementById('gf-name').textContent       = name;
+    document.getElementById('gf-assignment').textContent = assignment + ' · ' + course;
+    document.getElementById('gf-file').textContent       = name.replace(' ','_') + '_' + assignment.replace(/\s/g,'_') + '.pdf';
+
+    if (score) {
+      document.getElementById('gf-score').value = score;
+      updateScoreBar(score);
+    } else {
+      document.getElementById('gf-score').value = '';
+      updateScoreBar(0);
+    }
+    document.getElementById('gf-feedback').value = '';
+  }
+
+  function updateScoreBar(val) {
+    const pct   = Math.min(Math.max(val, 0), 100);
+    const bar   = document.getElementById('score-bar');
+    const label = document.getElementById('score-label');
+    bar.style.width = pct + '%';
+    bar.className = `h-full rounded-full transition-all duration-300 ${
+      pct >= 80 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-400' : 'bg-red-400'
+    }`;
+    label.textContent = pct >= 80 ? 'Excellent' : pct >= 60 ? 'Satisfactory' : pct > 0 ? 'Needs improvement' : 'Enter a score';
+    label.className = `text-xs mt-1 ${pct >= 80 ? 'text-emerald-500' : pct >= 60 ? 'text-amber-500' : pct > 0 ? 'text-red-400' : 'text-slate-400'}`;
+  }
+
+  function calcTotal() {
+    const r1 = parseInt(document.getElementById('r1-val').textContent);
+    const r2 = parseInt(document.getElementById('r2-val').textContent);
+    const r3 = parseInt(document.getElementById('r3-val').textContent);
+    const avg = Math.round((r1 + r2 + r3) / 3);
+    document.getElementById('gf-score').value = avg;
+    updateScoreBar(avg);
+  }
+
+  function addFeedback(text) {
+    const fb = document.getElementById('gf-feedback');
+    fb.value = fb.value ? fb.value + ' ' + text : text;
+    fb.focus();
+  }
+
+  function submitGrade() {
+    const score    = document.getElementById('gf-score').value;
+    const feedback = document.getElementById('gf-feedback').value;
+    if (!score) { alert('Please enter a score before submitting.'); return; }
+
+    // Visual feedback
+    const row = document.querySelector('.sub-row.selected');
+    if (row) {
+      const statusCell = row.querySelector('.badge-pending, .badge-late');
+      if (statusCell) {
+        statusCell.className = 'badge-graded text-xs font-semibold px-2 py-0.5 rounded-full';
+        statusCell.textContent = 'Graded';
+      }
+      const scoreCell = row.cells[5];
+      if (scoreCell) scoreCell.innerHTML = `<span class="text-xs font-bold text-emerald-600">${score}/100</span>`;
+    }
+    alert(`Grade submitted: ${score}/100`);
+    document.getElementById('grade-empty').classList.remove('hidden');
+    document.getElementById('grade-form').classList.add('hidden');
+  }
+
+  function requestResubmit() {
+    alert('Resubmission request sent to student.');
+  }
+
+  // Filter pills
+  function setStatusFilter(status) {
+    ['all','pending','graded','late'].forEach(s => {
+      document.getElementById('pill-' + s).classList.toggle('active', s === status);
+    });
+    filterByStatus(status);
+  }
+
+  function filterByStatus(status) {
+    document.querySelectorAll('#sub-tbody tr').forEach(row => {
+      row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+    });
+  }
+
+  function filterSubs() {
+    const course  = document.getElementById('course-filter').value.toLowerCase();
+    const status  = document.getElementById('status-filter').value;
+    document.querySelectorAll('#sub-tbody tr').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const show = (!course || text.includes(course)) && (!status || row.dataset.status === status);
+      row.style.display = show ? '' : 'none';
+    });
+  }
+
+  function searchSubs(val) {
+    const q = val.toLowerCase();
+    document.querySelectorAll('#sub-tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e,i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 60);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

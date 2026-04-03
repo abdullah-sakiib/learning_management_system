@@ -1,0 +1,544 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Catalog — EduFlow{% endblock %}
+{% block page_title %}Course Catalog{% endblock %}
+{% block page_subtitle %}Browse and enroll in available courses{% endblock %}
+{% block nav_courses %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .course-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  }
+  .course-card:hover .course-arrow {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+  .course-arrow {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .filter-btn { transition: all 0.2s ease; }
+  .filter-btn.active {
+    background: #4f46e5;
+    color: white;
+    border-color: #4f46e5;
+  }
+
+  /* List view row */
+  .list-row {
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .list-row:hover {
+    background: #f8f7ff;
+    border-color: #c7d2fe;
+  }
+
+  /* View toggle */
+  .view-btn.active {
+    background: white;
+    color: #4f46e5;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Enrolled badge shimmer */
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════
+     SEARCH + FILTER BAR
+══════════════════════════════════ -->
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6 reveal">
+  <div class="flex flex-col md:flex-row gap-3">
+
+    <!-- Search -->
+    <div class="relative flex-1">
+      <i class="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" id="search-input" placeholder="Search by course name, instructor..."
+        oninput="filterCourses()"
+        class="input-field w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all"/>
+    </div>
+
+    <!-- Category filter -->
+    <select id="category-filter" onchange="filterCourses()"
+      class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+      <option value="">All categories</option>
+      <option value="Computer Science">Computer Science</option>
+      <option value="Mathematics">Mathematics</option>
+      <option value="Database">Database</option>
+      <option value="Networks">Networks</option>
+      <option value="Management">Management</option>
+    </select>
+
+    <!-- Level filter -->
+    <select id="level-filter" onchange="filterCourses()"
+      class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+      <option value="">All levels</option>
+      <option value="Beginner">Beginner</option>
+      <option value="Intermediate">Intermediate</option>
+      <option value="Advanced">Advanced</option>
+    </select>
+
+    <!-- View toggle -->
+    <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 flex-shrink-0">
+      <button onclick="setView('grid')" id="view-grid"
+        class="view-btn active w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 transition-all">
+        <i class="ri-grid-line text-sm"></i>
+      </button>
+      <button onclick="setView('list')" id="view-list"
+        class="view-btn w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 transition-all">
+        <i class="ri-list-unordered text-sm"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Category pills -->
+  <div class="flex flex-wrap gap-2 mt-3">
+    <button onclick="setCat('')" class="filter-btn active text-xs font-semibold border border-slate-200 px-3 py-1.5 rounded-full transition-all" data-cat="">All</button>
+    <button onclick="setCat('Computer Science')" class="filter-btn text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full transition-all" data-cat="Computer Science">
+      <i class="ri-code-s-slash-line mr-1"></i>Computer Science
+    </button>
+    <button onclick="setCat('Database')" class="filter-btn text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full transition-all" data-cat="Database">
+      <i class="ri-database-2-line mr-1"></i>Database
+    </button>
+    <button onclick="setCat('Mathematics')" class="filter-btn text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full transition-all" data-cat="Mathematics">
+      <i class="ri-pie-chart-line mr-1"></i>Mathematics
+    </button>
+    <button onclick="setCat('Networks')" class="filter-btn text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full transition-all" data-cat="Networks">
+      <i class="ri-wifi-line mr-1"></i>Networks
+    </button>
+    <button onclick="setCat('Management')" class="filter-btn text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full transition-all" data-cat="Management">
+      <i class="ri-briefcase-line mr-1"></i>Management
+    </button>
+  </div>
+</div>
+
+<!-- Results count -->
+<div class="flex items-center justify-between mb-4 reveal">
+  <p class="text-sm text-slate-500">Showing <span id="result-count" class="font-semibold text-slate-800">6</span> courses</p>
+  <select onchange="sortCourses(this.value)"
+    class="input-field text-xs border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white transition-all">
+    <option value="name">Sort: Name A–Z</option>
+    <option value="students">Sort: Most students</option>
+    <option value="rating">Sort: Highest rated</option>
+    <option value="newest">Sort: Newest</option>
+  </select>
+</div>
+
+<!-- ══════════════════════════════════
+     GRID VIEW
+══════════════════════════════════ -->
+<div id="grid-view" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5" id="courses-container">
+
+  <!-- Course Card 1 -->
+  <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal"
+       data-category="Computer Science" data-level="Intermediate" data-name="Algorithms 101" data-instructor="Prof. Pomona Sprout" data-students="84" data-rating="4.8">
+    <!-- Banner -->
+    <div class="h-32 bg-gradient-to-br from-indigo-500 to-indigo-700 relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Computer Science</span>
+        <span class="text-xs font-semibold bg-emerald-400 text-white px-2.5 py-1 rounded-full">Enrolled</span>
+      </div>
+      <i class="ri-code-s-slash-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <div>
+        <h3 class="font-bold text-white text-base leading-tight">Algorithms 101</h3>
+      </div>
+    </div>
+    <!-- Body -->
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name=P+S&background=4f46e5&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <span class="text-xs text-slate-500">Prof. Pomona Sprout</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> 14 weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> 84 students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> 12 lectures</span>
+      </div>
+      <!-- Progress (enrolled) -->
+      <div class="mb-3">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="text-slate-500">Your progress</span>
+          <span class="font-semibold text-indigo-600">35%</span>
+        </div>
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full bg-indigo-500 rounded-full" style="width:35%"></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">4.8</span>
+          <span class="text-xs text-slate-400">· Intermediate</span>
+        </div>
+        <a href="{% url 'course_detail' 1 %}"
+           class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          Continue <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Card 2 -->
+  <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal"
+       data-category="Database" data-level="Beginner" data-name="Introduction to Database" data-instructor="Prof. Severus Snape" data-students="96" data-rating="4.7">
+    <div class="h-32 bg-gradient-to-br from-violet-500 to-violet-700 relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Database</span>
+        <span class="text-xs font-semibold bg-emerald-400 text-white px-2.5 py-1 rounded-full">Enrolled</span>
+      </div>
+      <i class="ri-database-2-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <h3 class="font-bold text-white text-base leading-tight">Introduction to Database</h3>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name=S+S&background=7c3aed&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <span class="text-xs text-slate-500">Prof. Severus Snape</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> 14 weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> 96 students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> 14 lectures</span>
+      </div>
+      <div class="mb-3">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="text-slate-500">Your progress</span>
+          <span class="font-semibold text-violet-600">55%</span>
+        </div>
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full bg-violet-500 rounded-full" style="width:55%"></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">4.7</span>
+          <span class="text-xs text-slate-400">· Beginner</span>
+        </div>
+        <a href="{% url 'course_detail' 2 %}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          Continue <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Card 3 -->
+  <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal"
+       data-category="Mathematics" data-level="Beginner" data-name="Basic Mathematics" data-instructor="Prof. Dolores Umbridge" data-students="62" data-rating="4.5">
+    <div class="h-32 bg-gradient-to-br from-emerald-500 to-emerald-700 relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Mathematics</span>
+        <span class="text-xs font-semibold bg-emerald-400 text-white px-2.5 py-1 rounded-full">Enrolled</span>
+      </div>
+      <i class="ri-pie-chart-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <h3 class="font-bold text-white text-base leading-tight">Basic Mathematics</h3>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name=D+U&background=ef4444&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <span class="text-xs text-slate-500">Prof. Dolores Umbridge</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> 12 weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> 62 students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> 10 lectures</span>
+      </div>
+      <div class="mb-3">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="text-slate-500">Your progress</span>
+          <span class="font-semibold text-emerald-600">80%</span>
+        </div>
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full bg-emerald-500 rounded-full" style="width:80%"></div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">4.5</span>
+          <span class="text-xs text-slate-400">· Beginner</span>
+        </div>
+        <a href="{% url 'course_detail' 3 %}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          Continue <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Card 4 (not enrolled) -->
+  <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal"
+       data-category="Networks" data-level="Advanced" data-name="Computer Networks" data-instructor="Prof. Minerva McGonagall" data-students="72" data-rating="4.9">
+    <div class="h-32 bg-gradient-to-br from-sky-500 to-sky-700 relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Networks</span>
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Open</span>
+      </div>
+      <i class="ri-wifi-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <h3 class="font-bold text-white text-base leading-tight">Computer Networks</h3>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name=M+M&background=0ea5e9&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <span class="text-xs text-slate-500">Prof. Minerva McGonagall</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> 12 weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> 72 students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> 11 lectures</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">4.9</span>
+          <span class="text-xs text-slate-400">· Advanced</span>
+        </div>
+        <a href="{% url 'course_detail' 4 %}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          View details <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Card 5 (not enrolled) -->
+  <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal"
+       data-category="Computer Science" data-level="Intermediate" data-name="Human Computer Interaction" data-instructor="Prof. Filius Flitwick" data-students="58" data-rating="4.6">
+    <div class="h-32 bg-gradient-to-br from-rose-500 to-rose-700 relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Computer Science</span>
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Open</span>
+      </div>
+      <i class="ri-computer-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <h3 class="font-bold text-white text-base leading-tight">Human Computer Interaction</h3>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name=F+F&background=f43f5e&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <span class="text-xs text-slate-500">Prof. Filius Flitwick</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> 14 weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> 58 students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> 13 lectures</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">4.6</span>
+          <span class="text-xs text-slate-400">· Intermediate</span>
+        </div>
+        <a href="{% url 'course_detail' 5 %}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          View details <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Card 6 (not enrolled) -->
+  <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal"
+       data-category="Management" data-level="Beginner" data-name="Introduction to Management" data-instructor="Prof. Sybill Trelawney" data-students="110" data-rating="4.3">
+    <div class="h-32 bg-gradient-to-br from-amber-500 to-amber-700 relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Management</span>
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Open</span>
+      </div>
+      <i class="ri-briefcase-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <h3 class="font-bold text-white text-base leading-tight">Introduction to Management</h3>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name=S+T&background=f59e0b&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <span class="text-xs text-slate-500">Prof. Sybill Trelawney</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> 10 weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> 110 students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> 9 lectures</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">4.3</span>
+          <span class="text-xs text-slate-400">· Beginner</span>
+        </div>
+        <a href="{% url 'course_detail' 6 %}" class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          View details <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════
+     LIST VIEW (hidden by default)
+══════════════════════════════════ -->
+<div id="list-view" class="hidden space-y-3">
+  {% for i in "123456" %}
+  <div class="list-row bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4 cursor-pointer reveal"
+       onclick="window.location='{% url 'course_detail' forloop.counter %}'">
+    <div class="w-12 h-12 rounded-xl flex-shrink-0
+      {% if forloop.counter == 1 %}bg-indigo-100{% elif forloop.counter == 2 %}bg-violet-100{% elif forloop.counter == 3 %}bg-emerald-100{% elif forloop.counter == 4 %}bg-sky-100{% elif forloop.counter == 5 %}bg-rose-100{% else %}bg-amber-100{% endif %}
+      flex items-center justify-center">
+      <i class="text-xl
+        {% if forloop.counter == 1 %}ri-code-s-slash-line text-indigo-600
+        {% elif forloop.counter == 2 %}ri-database-2-line text-violet-600
+        {% elif forloop.counter == 3 %}ri-pie-chart-line text-emerald-600
+        {% elif forloop.counter == 4 %}ri-wifi-line text-sky-600
+        {% elif forloop.counter == 5 %}ri-computer-line text-rose-600
+        {% else %}ri-briefcase-line text-amber-600{% endif %}"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-slate-800 truncate">
+        {% if forloop.counter == 1 %}Algorithms 101
+        {% elif forloop.counter == 2 %}Introduction to Database
+        {% elif forloop.counter == 3 %}Basic Mathematics
+        {% elif forloop.counter == 4 %}Computer Networks
+        {% elif forloop.counter == 5 %}Human Computer Interaction
+        {% else %}Introduction to Management{% endif %}
+      </p>
+      <p class="text-xs text-slate-400">
+        {% if forloop.counter == 1 %}Prof. Pomona Sprout · 84 students
+        {% elif forloop.counter == 2 %}Prof. Severus Snape · 96 students
+        {% elif forloop.counter == 3 %}Prof. Dolores Umbridge · 62 students
+        {% elif forloop.counter == 4 %}Prof. Minerva McGonagall · 72 students
+        {% elif forloop.counter == 5 %}Prof. Filius Flitwick · 58 students
+        {% else %}Prof. Sybill Trelawney · 110 students{% endif %}
+      </p>
+    </div>
+    <div class="hidden sm:flex items-center gap-4 flex-shrink-0">
+      <span class="text-xs text-slate-500">
+        {% if forloop.counter == 1 or forloop.counter == 2 %}14 weeks
+        {% elif forloop.counter == 3 or forloop.counter == 4 %}12 weeks
+        {% elif forloop.counter == 5 %}14 weeks{% else %}10 weeks{% endif %}
+      </span>
+      <div class="flex items-center gap-1">
+        <i class="ri-star-fill text-amber-400 text-xs"></i>
+        <span class="text-xs font-semibold text-slate-700">
+          {% if forloop.counter == 1 %}4.8{% elif forloop.counter == 2 %}4.7{% elif forloop.counter == 3 %}4.5{% elif forloop.counter == 4 %}4.9{% elif forloop.counter == 5 %}4.6{% else %}4.3{% endif %}
+        </span>
+      </div>
+      {% if forloop.counter <= 3 %}
+      <span class="text-xs bg-emerald-50 text-emerald-600 font-semibold px-2.5 py-0.5 rounded-full">Enrolled</span>
+      {% else %}
+      <span class="text-xs bg-slate-100 text-slate-500 font-semibold px-2.5 py-0.5 rounded-full">Open</span>
+      {% endif %}
+    </div>
+    <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Empty state -->
+<div id="empty-state" class="hidden text-center py-20">
+  <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+    <i class="ri-search-line text-slate-400 text-3xl"></i>
+  </div>
+  <p class="text-slate-600 font-semibold">No courses found</p>
+  <p class="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
+  <button onclick="resetFilters()" class="mt-4 text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-4 py-2 rounded-xl">
+    Clear filters
+  </button>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let activeView = 'grid';
+  let activeCat  = '';
+
+  function setView(v) {
+    activeView = v;
+    document.getElementById('grid-view').classList.toggle('hidden', v !== 'grid');
+    document.getElementById('list-view').classList.toggle('hidden', v !== 'list');
+    document.getElementById('view-grid').classList.toggle('active', v === 'grid');
+    document.getElementById('view-list').classList.toggle('active', v === 'list');
+  }
+
+  function setCat(cat) {
+    activeCat = cat;
+    document.querySelectorAll('.filter-btn[data-cat]').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === cat);
+    });
+    document.getElementById('category-filter').value = cat;
+    filterCourses();
+  }
+
+  function filterCourses() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const level  = document.getElementById('level-filter').value;
+    const cat    = activeCat || document.getElementById('category-filter').value;
+    const cards  = document.querySelectorAll('#grid-view .course-card');
+    let count = 0;
+
+    cards.forEach(card => {
+      const name  = card.dataset.name.toLowerCase();
+      const inst  = card.dataset.instructor.toLowerCase();
+      const ccat  = card.dataset.category;
+      const clvl  = card.dataset.level;
+      const match = (!search || name.includes(search) || inst.includes(search))
+                 && (!cat    || ccat === cat)
+                 && (!level  || clvl === level);
+      card.style.display = match ? '' : 'none';
+      if (match) count++;
+    });
+
+    document.getElementById('result-count').textContent = count;
+    document.getElementById('empty-state').style.display = count === 0 ? 'block' : 'none';
+  }
+
+  function resetFilters() {
+    activeCat = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('category-filter').value = '';
+    document.getElementById('level-filter').value = '';
+    document.querySelectorAll('.filter-btn[data-cat]').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn[data-cat=""]').classList.add('active');
+    filterCourses();
+  }
+
+  function sortCourses(by) {
+    const container = document.getElementById('grid-view');
+    const cards = [...container.querySelectorAll('.course-card')];
+    cards.sort((a, b) => {
+      if (by === 'name')     return a.dataset.name.localeCompare(b.dataset.name);
+      if (by === 'students') return parseInt(b.dataset.students) - parseInt(a.dataset.students);
+      if (by === 'rating')   return parseFloat(b.dataset.rating) - parseFloat(a.dataset.rating);
+      return 0;
+    });
+    cards.forEach(c => container.appendChild(c));
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 60);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

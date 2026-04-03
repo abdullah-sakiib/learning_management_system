@@ -1,0 +1,619 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Course — EduFlow{% endblock %}
+{% block page_title %}Create New Course{% endblock %}
+{% block page_subtitle %}Fill in the details to publish your course{% endblock %}
+{% block nav_courses %}active{% endblock %}
+{% block user_name %}Prof. Pomona Sprout{% endblock %}
+{% block user_role %}Instructor{% endblock %}
+{% block topbar_user %}Prof. Sprout{% endblock %}
+{% block topbar_role %}Instructor{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+
+  /* Step indicator */
+  .step-dot {
+    transition: all 0.3s ease;
+  }
+  .step-dot.active {
+    background: #4f46e5;
+    color: white;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  }
+  .step-dot.done {
+    background: #22c55e;
+    color: white;
+  }
+  .step-line {
+    transition: background 0.4s ease;
+  }
+  .step-line.done { background: #22c55e; }
+
+  /* Thumbnail upload */
+  .thumb-zone:hover { border-color: #a5b4fc; background: #f5f3ff; }
+  .thumb-zone { transition: all 0.2s ease; }
+
+  /* Tag input */
+  .tag-pill {
+    transition: all 0.2s ease;
+  }
+  .tag-pill:hover { background: #fecaca; }
+
+  /* Publish toggle */
+  .toggle-track {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #cbd5e1;
+    border-radius: 12px;
+    transition: background 0.2s ease;
+    cursor: pointer;
+  }
+  .toggle-track.on { background: #4f46e5; }
+  .toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .toggle-track.on .toggle-knob { transform: translateX(20px); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-xs text-slate-400 mb-6 reveal">
+  <a href="{% url 'dashboard' %}" class="hover:text-primary-600 transition">Dashboard</a>
+  <i class="ri-arrow-right-s-line"></i>
+  <span class="text-slate-600 font-medium">Create Course</span>
+</div>
+
+<!-- Step indicator -->
+<div class="flex items-center gap-0 mb-8 reveal">
+  {% for step in "123" %}
+  <div class="flex items-center {% if not forloop.last %}flex-1{% endif %}">
+    <div class="flex flex-col items-center">
+      <div id="step-{{ forloop.counter }}" class="step-dot w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 border-slate-200 text-slate-400
+        {% if forloop.counter == 1 %}active border-primary-500{% endif %}">
+        {% if forloop.counter == 1 %}<i class="ri-information-line text-base"></i>
+        {% elif forloop.counter == 2 %}<i class="ri-image-line text-base"></i>
+        {% else %}<i class="ri-settings-3-line text-base"></i>{% endif %}
+      </div>
+      <span class="text-xs font-medium mt-1.5
+        {% if forloop.counter == 1 %}text-primary-600{% else %}text-slate-400{% endif %}">
+        {% if forloop.counter == 1 %}Basic Info
+        {% elif forloop.counter == 2 %}Media
+        {% else %}Settings{% endif %}
+      </span>
+    </div>
+    {% if not forloop.last %}
+    <div class="step-line flex-1 h-0.5 bg-slate-200 mx-3 mt-[-18px]" id="line-{{ forloop.counter }}"></div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── FORM PANELS ───── -->
+  <div class="lg:col-span-2">
+
+    <form method="POST" action="{% url 'instructor_create_course' %}" enctype="multipart/form-data" id="course-form">
+      {% csrf_token %}
+
+      <!-- ══ STEP 1: Basic Info ══ -->
+      <div id="panel-1" class="space-y-5">
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 reveal">
+          <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+            <span class="w-6 h-6 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-xs font-bold">1</span>
+            Basic Information
+          </h2>
+
+          <!-- Course title -->
+          <div class="mb-4">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Course Title <span class="text-red-400">*</span></label>
+            <input type="text" name="title" id="course-title"
+              placeholder="e.g. Introduction to Algorithms"
+              oninput="updatePreview()"
+              required
+              class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all"/>
+            <p class="text-xs text-slate-400 mt-1">Be specific and clear — students will search for this.</p>
+          </div>
+
+          <!-- Short description -->
+          <div class="mb-4">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Short Description <span class="text-red-400">*</span></label>
+            <textarea name="short_desc" rows="2" id="short-desc"
+              placeholder="One or two sentences summarizing the course..."
+              oninput="updatePreview()"
+              required
+              class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 resize-none transition-all"></textarea>
+          </div>
+
+          <!-- Full description -->
+          <div class="mb-4">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Full Description</label>
+            <textarea name="description" rows="5"
+              placeholder="Describe what students will learn, topics covered, and why this course is valuable..."
+              class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 resize-none transition-all"></textarea>
+          </div>
+
+          <!-- Category + Level row -->
+          <div class="grid sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Category <span class="text-red-400">*</span></label>
+              <select name="category" required
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+                <option value="">Select category...</option>
+                <option>Computer Science</option>
+                <option>Mathematics</option>
+                <option>Database</option>
+                <option>Networks</option>
+                <option>Management</option>
+                <option>Physics</option>
+                <option>Chemistry</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Difficulty Level <span class="text-red-400">*</span></label>
+              <select name="level" required
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+                <option value="">Select level...</option>
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Duration + Capacity -->
+          <div class="grid sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Duration (weeks)</label>
+              <input type="number" name="duration_weeks" min="1" max="52" placeholder="e.g. 14"
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all"/>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Max Capacity</label>
+              <input type="number" name="capacity" min="1" placeholder="Leave blank for unlimited"
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all"/>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Tags</label>
+            <div class="flex flex-wrap gap-2 mb-2" id="tags-container">
+              <span class="tag-pill flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer" onclick="removeTag(this)">
+                Algorithms <i class="ri-close-line text-xs"></i>
+              </span>
+              <span class="tag-pill flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer" onclick="removeTag(this)">
+                Computer Science <i class="ri-close-line text-xs"></i>
+              </span>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="tag-input" placeholder="Add a tag and press Enter..."
+                onkeydown="addTag(event)"
+                class="input-field flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 transition-all"/>
+              <button type="button" onclick="addTag({key:'Enter'})"
+                class="px-3 py-2.5 bg-primary-50 text-primary-600 rounded-xl text-xs font-medium hover:bg-primary-100 transition">
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- What students will learn -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 reveal">
+          <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <span class="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-xs font-bold"><i class="ri-checkbox-circle-line text-sm"></i></span>
+            What Students Will Learn
+          </h2>
+          <div id="outcomes-list" class="space-y-2 mb-3">
+            <div class="flex items-center gap-2">
+              <i class="ri-drag-move-2-line text-slate-300 cursor-grab flex-shrink-0"></i>
+              <input type="text" name="outcomes[]" value="Understand algorithm complexity and Big-O notation"
+                class="input-field flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all"/>
+              <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-400 transition flex-shrink-0">
+                <i class="ri-close-line"></i>
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="ri-drag-move-2-line text-slate-300 cursor-grab flex-shrink-0"></i>
+              <input type="text" name="outcomes[]" value="Implement classic sorting and searching algorithms"
+                class="input-field flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all"/>
+              <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-400 transition flex-shrink-0">
+                <i class="ri-close-line"></i>
+              </button>
+            </div>
+          </div>
+          <button type="button" onclick="addOutcome()"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition">
+            <i class="ri-add-circle-line"></i> Add learning outcome
+          </button>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex justify-end reveal">
+          <button type="button" onclick="goStep(2)"
+            class="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm">
+            Next: Media <i class="ri-arrow-right-line"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ STEP 2: Media ══ -->
+      <div id="panel-2" class="hidden space-y-5">
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 reveal">
+          <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+            <span class="w-6 h-6 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-xs font-bold">2</span>
+            Course Thumbnail
+          </h2>
+
+          <!-- Thumbnail upload -->
+          <div class="thumb-zone border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center cursor-pointer mb-4"
+               id="thumb-zone" onclick="document.getElementById('thumb-input').click()">
+            <div id="thumb-placeholder">
+              <i class="ri-image-add-line text-4xl text-slate-300 mb-3"></i>
+              <p class="font-medium text-slate-600 text-sm mb-1">Click to upload course thumbnail</p>
+              <p class="text-xs text-slate-400">PNG, JPG, GIF — Recommended: 1280×720px</p>
+            </div>
+            <img id="thumb-preview" src="" alt="" class="hidden mx-auto max-h-48 rounded-xl object-cover"/>
+            <input type="file" id="thumb-input" name="thumbnail" accept="image/*" class="hidden" onchange="previewThumb(this)"/>
+          </div>
+
+          <!-- Color picker alternative -->
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Or choose a banner color</p>
+            <div class="flex flex-wrap gap-2" id="color-options">
+              {% for color in "indigo violet emerald sky rose amber" %}
+              <button type="button" onclick="selectColor('{{ color }}')"
+                class="w-8 h-8 rounded-xl border-2 border-transparent hover:border-white hover:scale-110 transition-all
+                {% if color == 'indigo' %}bg-indigo-500{% elif color == 'violet' %}bg-violet-500{% elif color == 'emerald' %}bg-emerald-500{% elif color == 'sky' %}bg-sky-500{% elif color == 'rose' %}bg-rose-500{% else %}bg-amber-500{% endif %}"
+                data-color="{{ color }}">
+              </button>
+              {% endfor %}
+            </div>
+            <input type="hidden" name="banner_color" id="banner-color" value="indigo"/>
+          </div>
+        </div>
+
+        <!-- Intro video -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 reveal">
+          <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <span class="w-6 h-6 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center"><i class="ri-play-circle-line text-sm"></i></span>
+            Intro Video URL <span class="text-xs text-slate-400 font-normal ml-1">(optional)</span>
+          </h2>
+          <div class="relative">
+            <i class="ri-youtube-line absolute left-3.5 top-1/2 -translate-y-1/2 text-red-400 text-lg"></i>
+            <input type="url" name="intro_video" placeholder="https://youtube.com/watch?v=..."
+              class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 transition-all"/>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">YouTube or Vimeo links supported. Shown on the course detail page.</p>
+        </div>
+
+        <div class="flex justify-between reveal">
+          <button type="button" onclick="goStep(1)"
+            class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl px-5 py-3 hover:bg-slate-50 transition">
+            <i class="ri-arrow-left-line"></i> Back
+          </button>
+          <button type="button" onclick="goStep(3)"
+            class="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm">
+            Next: Settings <i class="ri-arrow-right-line"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ STEP 3: Settings ══ -->
+      <div id="panel-3" class="hidden space-y-5">
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 reveal">
+          <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+            <span class="w-6 h-6 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-xs font-bold">3</span>
+            Course Settings
+          </h2>
+
+          <!-- Enrollment type -->
+          <div class="mb-5">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Enrollment Type</label>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="flex items-start gap-3 p-4 rounded-xl border-2 border-primary-200 bg-primary-50 cursor-pointer">
+                <input type="radio" name="enrollment_type" value="open" checked class="mt-0.5 text-primary-600"/>
+                <div>
+                  <p class="text-sm font-semibold text-slate-800">Open enrollment</p>
+                  <p class="text-xs text-slate-500 mt-0.5">Any student can enroll directly</p>
+                </div>
+              </label>
+              <label class="flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-primary-200 hover:bg-primary-50 transition">
+                <input type="radio" name="enrollment_type" value="approval" class="mt-0.5 text-primary-600"/>
+                <div>
+                  <p class="text-sm font-semibold text-slate-800">Approval required</p>
+                  <p class="text-xs text-slate-500 mt-0.5">You manually approve each student</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Toggles -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between py-3 border-b border-slate-100">
+              <div>
+                <p class="text-sm font-medium text-slate-700">Allow student discussions</p>
+                <p class="text-xs text-slate-400 mt-0.5">Students can post questions in each lecture</p>
+              </div>
+              <div class="toggle-track on" onclick="this.classList.toggle('on')">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-3 border-b border-slate-100">
+              <div>
+                <p class="text-sm font-medium text-slate-700">Show progress to students</p>
+                <p class="text-xs text-slate-400 mt-0.5">Students can see their completion percentage</p>
+              </div>
+              <div class="toggle-track on" onclick="this.classList.toggle('on')">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-3 border-b border-slate-100">
+              <div>
+                <p class="text-sm font-medium text-slate-700">Certificate on completion</p>
+                <p class="text-xs text-slate-400 mt-0.5">Issue a completion certificate automatically</p>
+              </div>
+              <div class="toggle-track" onclick="this.classList.toggle('on')">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-3">
+              <div>
+                <p class="text-sm font-medium text-slate-700">Publish immediately</p>
+                <p class="text-xs text-slate-400 mt-0.5">Make visible to students right away</p>
+              </div>
+              <div class="toggle-track" id="publish-toggle" onclick="this.classList.toggle('on'); updatePublishLabel()">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Start date -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 reveal">
+          <h2 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <i class="ri-calendar-line text-primary-500"></i> Schedule
+          </h2>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Start Date</label>
+              <input type="date" name="start_date"
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all"/>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">End Date</label>
+              <input type="date" name="end_date"
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex flex-wrap items-center justify-between gap-3 reveal">
+          <button type="button" onclick="goStep(2)"
+            class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl px-5 py-3 hover:bg-slate-50 transition">
+            <i class="ri-arrow-left-line"></i> Back
+          </button>
+          <div class="flex items-center gap-3">
+            <button type="submit" name="action" value="draft"
+              class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 border border-slate-200 rounded-xl px-5 py-3 hover:bg-slate-50 transition">
+              <i class="ri-save-line"></i> Save as draft
+            </button>
+            <button type="submit" name="action" value="publish"
+              class="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm">
+              <i class="ri-rocket-line"></i> <span id="publish-label">Create Course</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ───── RIGHT: Live Preview ───── -->
+  <div class="space-y-5">
+
+    <!-- Preview card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal sticky top-6">
+      <div class="h-32 bg-gradient-to-br from-indigo-500 to-indigo-700 relative overflow-hidden p-4 flex flex-col justify-end" id="preview-banner">
+        <i class="ri-book-open-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+        <p class="text-white font-bold text-base leading-tight" id="preview-title">Your Course Title</p>
+        <p class="text-indigo-200 text-xs mt-0.5" id="preview-desc">Short description appears here...</p>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <img src="https://ui-avatars.com/api/?name=P+S&background=4f46e5&color=fff&size=32" class="w-5 h-5 rounded-full"/>
+          <span class="text-xs text-slate-500">Prof. Pomona Sprout</span>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full" id="preview-level">Level</span>
+          <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full" id="preview-category">Category</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="bg-primary-50 border border-primary-100 rounded-2xl p-5 reveal">
+      <h3 class="font-semibold text-primary-700 text-sm mb-3 flex items-center gap-2">
+        <i class="ri-lightbulb-line"></i> Tips for a great course
+      </h3>
+      <ul class="space-y-2">
+        <li class="flex items-start gap-2 text-xs text-primary-700">
+          <i class="ri-checkbox-circle-line flex-shrink-0 mt-0.5"></i>
+          Use a clear, specific title — avoid vague names.
+        </li>
+        <li class="flex items-start gap-2 text-xs text-primary-700">
+          <i class="ri-checkbox-circle-line flex-shrink-0 mt-0.5"></i>
+          Add a high-quality thumbnail for better engagement.
+        </li>
+        <li class="flex items-start gap-2 text-xs text-primary-700">
+          <i class="ri-checkbox-circle-line flex-shrink-0 mt-0.5"></i>
+          List at least 4 learning outcomes so students know what to expect.
+        </li>
+        <li class="flex items-start gap-2 text-xs text-primary-700">
+          <i class="ri-checkbox-circle-line flex-shrink-0 mt-0.5"></i>
+          Set a realistic duration and stick to the schedule.
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let currentStep = 1;
+
+  function goStep(step) {
+    // Hide all panels
+    [1,2,3].forEach(s => {
+      document.getElementById('panel-' + s).classList.add('hidden');
+      const dot = document.getElementById('step-' + s);
+      dot.classList.remove('active');
+      if (s < step) {
+        dot.classList.add('done');
+        dot.classList.remove('step-dot');
+      } else {
+        dot.classList.remove('done');
+      }
+    });
+
+    // Update lines
+    [1,2].forEach(l => {
+      const line = document.getElementById('line-' + l);
+      if (l < step) line.classList.add('done');
+      else line.classList.remove('done');
+    });
+
+    document.getElementById('panel-' + step).classList.remove('hidden');
+    document.getElementById('step-' + step).classList.add('active');
+    currentStep = step;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Live preview
+  function updatePreview() {
+    const title = document.getElementById('course-title').value || 'Your Course Title';
+    const desc  = document.getElementById('short-desc').value  || 'Short description appears here...';
+    document.getElementById('preview-title').textContent = title;
+    document.getElementById('preview-desc').textContent  = desc;
+  }
+
+  // Select banner color
+  function selectColor(color) {
+    document.getElementById('banner-color').value = color;
+    const colorMap = {
+      indigo:  'from-indigo-500 to-indigo-700',
+      violet:  'from-violet-500 to-violet-700',
+      emerald: 'from-emerald-500 to-emerald-700',
+      sky:     'from-sky-500 to-sky-700',
+      rose:    'from-rose-500 to-rose-700',
+      amber:   'from-amber-500 to-amber-700',
+    };
+    const banner = document.getElementById('preview-banner');
+    banner.className = `h-32 bg-gradient-to-br ${colorMap[color]} relative overflow-hidden p-4 flex flex-col justify-end`;
+
+    // Highlight selected
+    document.querySelectorAll('#color-options button').forEach(b => {
+      b.style.border = b.dataset.color === color ? '3px solid white' : '';
+    });
+  }
+
+  // Thumbnail preview
+  function previewThumb(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('thumb-placeholder').classList.add('hidden');
+        const img = document.getElementById('thumb-preview');
+        img.src = e.target.result;
+        img.classList.remove('hidden');
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Tags
+  function addTag(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const input = document.getElementById('tag-input');
+    const val   = input.value.trim();
+    if (!val) return;
+    const span = document.createElement('span');
+    span.className = 'tag-pill flex items-center gap-1.5 bg-primary-50 text-primary-700 text-xs font-medium px-3 py-1.5 rounded-full cursor-pointer';
+    span.innerHTML = `${val} <i class="ri-close-line text-xs"></i>`;
+    span.onclick = () => span.remove();
+    document.getElementById('tags-container').appendChild(span);
+    input.value = '';
+  }
+
+  function removeTag(el) { el.remove(); }
+
+  // Learning outcomes
+  function addOutcome() {
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-2';
+    div.innerHTML = `
+      <i class="ri-drag-move-2-line text-slate-300 cursor-grab flex-shrink-0"></i>
+      <input type="text" name="outcomes[]" placeholder="e.g. Understand recursion..."
+        class="input-field flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all"/>
+      <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-red-400 transition flex-shrink-0">
+        <i class="ri-close-line"></i>
+      </button>`;
+    document.getElementById('outcomes-list').appendChild(div);
+    div.querySelector('input').focus();
+  }
+
+  function updatePublishLabel() {
+    const on = document.getElementById('publish-toggle').classList.contains('on');
+    document.getElementById('publish-label').textContent = on ? 'Publish Course' : 'Create Course';
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e,i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 60);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

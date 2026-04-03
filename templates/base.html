@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}EduFlow LMS{% endblock %}</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: DM Sans + DM Serif Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+  <!-- Remix Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'sans-serif'],
+            serif: ['DM Serif Display', 'serif'],
+          },
+          colors: {
+            primary: {
+              50:  '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { font-family: 'DM Sans', sans-serif; }
+
+    /* Sidebar transition */
+    #sidebar {
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 260px;
+    }
+    #sidebar.collapsed {
+      width: 72px;
+    }
+
+    /* Hide labels when collapsed */
+    #sidebar.collapsed .nav-label,
+    #sidebar.collapsed .nav-section-label,
+    #sidebar.collapsed .user-info,
+    #sidebar.collapsed .logo-text {
+      display: none;
+    }
+
+    /* Center icons when collapsed */
+    #sidebar.collapsed .nav-item {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    #sidebar.collapsed .nav-item-inner {
+      justify-content: center;
+    }
+
+    /* Active nav item */
+    .nav-item.active {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+    }
+    .nav-item.active .nav-icon {
+      color: white;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
+
+    /* Page content fade in */
+    .page-content {
+      animation: fadeInUp 0.4s ease both;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Notification badge pulse */
+    @keyframes pulse-badge {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(99,102,241,0); }
+    }
+    .badge-pulse { animation: pulse-badge 2s infinite; }
+
+    /* Tooltip for collapsed sidebar */
+    .nav-item { position: relative; }
+    #sidebar.collapsed .nav-item:hover .nav-tooltip {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+    .nav-tooltip {
+      position: absolute;
+      left: calc(100% + 12px);
+      top: 50%;
+      transform: translateX(-8px) translateY(-50%);
+      background: #1e1b4b;
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+    .nav-tooltip::before {
+      content: '';
+      position: absolute;
+      right: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 5px solid transparent;
+      border-right-color: #1e1b4b;
+    }
+
+    /* Top search focus */
+    #topbar-search:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+
+    /* User dropdown */
+    #user-dropdown {
+      transition: all 0.2s ease;
+      transform-origin: top right;
+    }
+    #user-dropdown.hidden {
+      transform: scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Notification panel */
+    #notif-panel {
+      transition: all 0.2s ease;
+      transform-origin: top right;
+    }
+    #notif-panel.hidden {
+      transform: scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
+
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR
+  ════════════════════════════════════════════ -->
+  <aside id="sidebar" class="bg-white border-r border-slate-100 flex flex-col h-screen overflow-hidden shadow-sm z-30 flex-shrink-0">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center flex-shrink-0 shadow-md">
+        <i class="ri-graduation-cap-fill text-white text-lg"></i>
+      </div>
+      <span class="logo-text font-semibold text-slate-800 text-lg tracking-tight">EduFlow</span>
+    </div>
+
+    <!-- User Info -->
+    <div class="user-info flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+      <div class="relative flex-shrink-0">
+        <img src="https://ui-avatars.com/api/?name={{ current_user_name|urlencode }}&background=4f46e5&color=fff&size=64"
+             class="w-9 h-9 rounded-full object-cover" alt="User Avatar"/>
+        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white"></span>
+      </div>
+      <div class="overflow-hidden">
+        <p class="text-sm font-semibold text-slate-800 truncate">{% block user_name %}John Doe{% endblock %}</p>
+        <p class="text-xs text-primary-500 font-medium truncate">{% block user_role %}Student{% endblock %}</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+
+      <!-- Main Menu -->
+      <p class="nav-section-label text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Main Menu</p>
+
+      <a href="{% url 'dashboard' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_dashboard %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-dashboard-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Dashboard</span>
+        </span>
+        <span class="nav-tooltip">Dashboard</span>
+      </a>
+
+      <a href="{% url 'courses' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_courses %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-book-open-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">My Courses</span>
+        </span>
+        <span class="nav-tooltip">My Courses</span>
+      </a>
+
+      {% if is_instructor or is_admin %}
+      <a href="{% url 'instructor_create_course' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-add-circle-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Create Course</span>
+        </span>
+        <span class="nav-tooltip">Create Course</span>
+      </a>
+
+      <a href="{% url 'instructor_submissions' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-file-check-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Submissions</span>
+        </span>
+        <span class="nav-tooltip">Submissions</span>
+      </a>
+      {% endif %}
+
+      {% if is_student %}
+      <a href="{% url 'assignments' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_assignments %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-file-list-3-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Assignments</span>
+        </span>
+        <span class="nav-tooltip">Assignments</span>
+        <!-- Badge -->
+        <span class="nav-label ml-auto bg-primary-100 text-primary-600 text-xs font-semibold px-2 py-0.5 rounded-full">3</span>
+      </a>
+
+      <a href="{% url 'grades' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_grades %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-bar-chart-box-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Grades</span>
+        </span>
+        <span class="nav-tooltip">Grades</span>
+      </a>
+      {% endif %}
+
+      <a href="{% url 'quiz' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_quiz %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-questionnaire-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Quizzes</span>
+        </span>
+        <span class="nav-tooltip">Quizzes</span>
+      </a>
+
+      <!-- Divider -->
+      <div class="pt-3 pb-1">
+        <p class="nav-section-label text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Account</p>
+      </div>
+
+      <a href="{% url 'profile' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_profile %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-user-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Profile</span>
+        </span>
+        <span class="nav-tooltip">Profile</span>
+      </a>
+
+      <a href="{% url 'announcements' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_announcements %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-megaphone-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Announcements</span>
+        </span>
+        <span class="nav-tooltip">Announcements</span>
+      </a>
+
+      <a href="{% url 'settings' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_settings %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-settings-3-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Settings</span>
+        </span>
+        <span class="nav-tooltip">Settings</span>
+      </a>
+
+    </nav>
+
+    <!-- Logout -->
+    <div class="p-3 border-t border-slate-100">
+      <a href="{% url 'logout' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 cursor-pointer w-full">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-logout-box-r-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Logout</span>
+        </span>
+        <span class="nav-tooltip">Logout</span>
+      </a>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN AREA
+  ════════════════════════════════════════════ -->
+  <div class="flex flex-col flex-1 overflow-hidden">
+
+    <!-- TOPBAR -->
+    <header class="bg-white border-b border-slate-100 px-6 py-3.5 flex items-center gap-4 z-20 shadow-sm">
+
+      <!-- Sidebar Toggle Button -->
+      <button id="sidebar-toggle"
+              onclick="toggleSidebar()"
+              class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-all duration-200 flex-shrink-0">
+        <i class="ri-menu-fold-line text-xl" id="toggle-icon"></i>
+      </button>
+
+      <!-- Page Title -->
+      <div class="flex-shrink-0">
+        <h1 class="text-base font-semibold text-slate-800">{% block page_title %}Dashboard{% endblock %}</h1>
+        <p class="text-xs text-slate-400">{% block page_subtitle %}Welcome back!{% endblock %}</p>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="flex-1 max-w-md mx-auto">
+        <div class="relative">
+          <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="topbar-search"
+                 type="text"
+               placeholder="{{ topbar_search_placeholder|default:'Search...' }}"
+                 class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all duration-200 focus:bg-white focus:border-primary-300"/>
+        </div>
+      </div>
+
+      <!-- Right Side Actions -->
+      <div class="flex items-center gap-2 ml-auto">
+
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button id="notif-btn"
+                  onclick="toggleNotif()"
+                  class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-all duration-200 relative">
+            <i class="ri-notification-3-line text-xl"></i>
+            <span class="badge-pulse absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full"></span>
+          </button>
+
+          <!-- Notification Dropdown -->
+          <div id="notif-panel" class="hidden absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <h3 class="font-semibold text-slate-800 text-sm">Notifications</h3>
+              <span class="text-xs text-primary-500 font-medium cursor-pointer hover:underline">Mark all read</span>
+            </div>
+            <div class="max-h-72 overflow-y-auto divide-y divide-slate-50">
+              {% for notif in topbar_notifications %}
+              <div class="flex gap-3 px-4 py-3 hover:bg-slate-50 transition cursor-pointer">
+                <div class="w-8 h-8 rounded-full {{ notif.icon_wrap_class }} flex items-center justify-center flex-shrink-0">
+                  <i class="{{ notif.icon }} {{ notif.icon_class }} text-sm"></i>
+                </div>
+                <div>
+                  <p class="text-sm text-slate-700 font-medium">{{ notif.title }}</p>
+                  <p class="text-xs text-slate-400 mt-0.5">{{ notif.subtitle }}</p>
+                  <p class="text-xs text-slate-400">{{ notif.time }}</p>
+                </div>
+              </div>
+              {% empty %}
+              <div class="px-4 py-6 text-center">
+                <p class="text-sm text-slate-500">No notifications yet.</p>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="px-4 py-3 border-t border-slate-100 text-center">
+              <a href="#" class="text-xs text-primary-500 font-medium hover:underline">View all notifications</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Avatar Dropdown -->
+        <div class="relative">
+          <button id="user-btn"
+                  onclick="toggleUserMenu()"
+                  class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all duration-200">
+            <img src="https://ui-avatars.com/api/?name={{ current_user_name|urlencode }}&background=4f46e5&color=fff&size=64"
+                 class="w-8 h-8 rounded-full object-cover" alt="User"/>
+            <div class="text-left hidden sm:block">
+              <p class="text-xs font-semibold text-slate-700 leading-tight">{% block topbar_user %}John Doe{% endblock %}</p>
+              <p class="text-xs text-slate-400 leading-tight">{% block topbar_role %}Student{% endblock %}</p>
+            </div>
+            <i class="ri-arrow-down-s-line text-slate-400 text-sm"></i>
+          </button>
+
+          <!-- User Dropdown -->
+          <div id="user-dropdown" class="hidden absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
+            <div class="px-4 py-3 border-b border-slate-100">
+              <p class="text-sm font-semibold text-slate-800">{{ current_user_name }}</p>
+              <p class="text-xs text-slate-400">{{ current_user_email|default:"no-email@set.local" }}</p>
+            </div>
+            <div class="py-1">
+              <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary-600 transition">
+                <i class="ri-user-line text-base"></i> My Profile
+              </a>
+              <a href="{% url 'settings' %}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary-600 transition">
+                <i class="ri-settings-3-line text-base"></i> Settings
+              </a>
+            </div>
+            <div class="border-t border-slate-100 py-1">
+              <a href="{% url 'logout' %}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-50 transition">
+                <i class="ri-logout-box-r-line text-base"></i> Logout
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="flex-1 overflow-y-auto bg-slate-50">
+      <div class="page-content p-6">
+        {% block content %}
+        <!-- Page content goes here -->
+        {% endblock %}
+      </div>
+    </main>
+
+  </div><!-- end main area -->
+
+
+  <!-- ═══════════════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════════════════ -->
+  <script>
+    // ── Sidebar Toggle ──
+    const sidebar = document.getElementById('sidebar');
+    const toggleIcon = document.getElementById('toggle-icon');
+    let sidebarCollapsed = false;
+
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      sidebar.classList.toggle('collapsed', sidebarCollapsed);
+      toggleIcon.className = sidebarCollapsed
+        ? 'ri-menu-unfold-line text-xl'
+        : 'ri-menu-fold-line text-xl';
+      localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+    }
+
+    // Restore sidebar state on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      if (saved === 'true') {
+        sidebarCollapsed = true;
+        sidebar.classList.add('collapsed');
+        toggleIcon.className = 'ri-menu-unfold-line text-xl';
+      }
+    });
+
+    // ── Notification Panel ──
+    const notifPanel = document.getElementById('notif-panel');
+    let notifOpen = false;
+
+    function toggleNotif() {
+      notifOpen = !notifOpen;
+      notifPanel.classList.toggle('hidden', !notifOpen);
+      if (notifOpen) closeUserMenu();
+    }
+
+    // ── User Dropdown ──
+    const userDropdown = document.getElementById('user-dropdown');
+    let userMenuOpen = false;
+
+    function toggleUserMenu() {
+      userMenuOpen = !userMenuOpen;
+      userDropdown.classList.toggle('hidden', !userMenuOpen);
+      if (userMenuOpen) closeNotif();
+    }
+
+    function closeUserMenu() {
+      userMenuOpen = false;
+      userDropdown.classList.add('hidden');
+    }
+
+    function closeNotif() {
+      notifOpen = false;
+      notifPanel.classList.add('hidden');
+    }
+
+    // ── Close dropdowns on outside click ──
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#notif-btn') && !e.target.closest('#notif-panel')) closeNotif();
+      if (!e.target.closest('#user-btn') && !e.target.closest('#user-dropdown')) closeUserMenu();
+    });
+
+    // ── Search keyboard shortcut (/) ──
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        document.getElementById('topbar-search').focus();
+      }
+    });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>
