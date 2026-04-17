@@ -1,4 +1,10 @@
+# Python bytecode
 __pycache__/
+*.py[cod]
+*.pyo
 *.pyc
+
+# Django
+db.sqlite3
 *.sqlite3
-.env
+media/
