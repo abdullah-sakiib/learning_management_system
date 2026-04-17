@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Quiz — EduFlow{% endblock %}
+{% block page_title %}Edit Quiz{% endblock %}
+{% block page_subtitle %}Update quiz details and manage questions{% endblock %}
+{% block nav_quiz %}active{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">{{ quiz.title }}</h2>
+        <p class="text-sm text-slate-500">{{ quiz.course.title }} · {{ questions|length }} questions · {{ quiz.total_marks }} marks</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'quiz' %}" class="text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition px-4 py-2 rounded-xl">
+          Back to quizzes
+        </a>
+        <a href="{% url 'instructor_quiz_attempts' quiz.id %}" class="text-sm font-medium text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition px-4 py-2 rounded-xl">
+          Evaluate attempts
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-1 space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h3 class="font-semibold text-slate-800 text-sm mb-3">Quiz Details</h3>
+        <form method="post" class="space-y-3">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="quiz_meta" />
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Title</label>
+            <input name="title" type="text" value="{{ quiz.title }}" required
+                   class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Marks</label>
+              <input name="total_marks" type="number" min="1" value="{{ quiz.total_marks }}"
+                     class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Time (min)</label>
+              <input name="time_limit_minutes" type="number" min="1" value="{{ quiz.time_limit_minutes }}"
+                     class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="is_published" {% if quiz.is_published %}checked{% endif %} />
+            Published
+          </label>
+
+          <button type="submit" class="w-full text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition py-2.5 rounded-xl">
+            Save quiz details
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h3 class="font-semibold text-slate-800 text-sm mb-3">Add Question</h3>
+        <form method="post" class="space-y-3">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="add_question" />
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Question</label>
+            <textarea name="question_text" rows="3" required
+                      class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                      placeholder="Enter question text"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Type</label>
+              <select name="question_type" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                <option value="mcq">Multiple Choice</option>
+                <option value="true_false">True/False</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Marks</label>
+              <input name="marks" type="number" min="1" value="1"
+                     class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Options (MCQ only, one per line)</label>
+            <textarea name="options" rows="3"
+                      class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                      placeholder="Option A&#10;Option B&#10;Option C"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Correct Answer</label>
+            <input name="correct_answer" type="text"
+                   class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                   placeholder="For MCQ/True-False" />
+          </div>
+
+          <button type="submit" class="w-full text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition py-2.5 rounded-xl">
+            Add question
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800 text-sm">Questions</h3>
+          <span class="text-xs text-slate-500">{{ questions|length }} total</span>
+        </div>
+
+        {% if questions %}
+        <div class="divide-y divide-slate-100">
+          {% for q in questions %}
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">Q{{ q.order }}</span>
+                  <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{{ q.get_question_type_display }}</span>
+                  <span class="text-xs text-slate-500">{{ q.marks }} mark{{ q.marks|pluralize }}</span>
+                </div>
+                <p class="text-sm font-medium text-slate-800 mb-2">{{ q.question_text }}</p>
+                {% if q.options_json %}
+                <ul class="text-xs text-slate-600 space-y-1 mb-2">
+                  {% for opt in q.options_json %}
+                  <li>• {{ opt }}</li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+                <p class="text-xs text-emerald-700">Correct: {{ q.correct_answer|default:"Not set" }}</p>
+              </div>
+
+              <form method="post" onsubmit="return confirm('Delete this question?');">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="delete_question" />
+                <input type="hidden" name="question_id" value="{{ q.id }}" />
+                <button type="submit" class="text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition px-3 py-1.5 rounded-lg">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 text-center">
+          <p class="font-semibold text-slate-700 mb-1">No questions yet</p>
+          <p class="text-sm text-slate-400">Use the Add Question form to build this quiz.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
