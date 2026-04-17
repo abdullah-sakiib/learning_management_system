@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Take Quiz - EduFlow{% endblock %}
+{% block page_title %}{{ quiz_obj.title }}{% endblock %}
+{% block page_subtitle %}{{ quiz_obj.course.title }}{% endblock %}
+{% block nav_quiz %}active{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-5">
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">{{ quiz_obj.title }}</h2>
+        <p class="text-sm text-slate-500">{{ quiz_obj.course.title }} · {{ questions|length }} questions · {{ quiz_obj.total_marks }} marks</p>
+      </div>
+      <a href="{% url 'quiz' %}" class="text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition px-4 py-2 rounded-xl">
+        Back to quizzes
+      </a>
+    </div>
+  </div>
+
+  {% if is_submitted %}
+  <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+    <p class="text-emerald-700 font-semibold text-sm">Submitted</p>
+    <p class="text-emerald-700 text-sm mt-1">Score: {{ attempt.score|floatformat:-2 }}/{{ quiz_obj.total_marks }}</p>
+    <p class="text-emerald-700 text-xs mt-1">Submitted at {{ attempt.submitted_at|date:"M d, Y H:i" }}</p>
+  </div>
+  {% endif %}
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+
+    {% for row in question_rows %}
+    {% with question=row.question response=row.response %}
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <p class="text-sm font-semibold text-slate-800">Q{{ forloop.counter }}. {{ question.question_text }}</p>
+        <span class="text-xs text-slate-500">{{ question.marks }} mark{{ question.marks|pluralize }}</span>
+      </div>
+
+      {% if question.question_type == 'mcq' and question.options_json %}
+      <div class="space-y-2 mt-3">
+        {% for opt in question.options_json %}
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" name="answer_{{ question.id }}" value="{{ opt }}"
+                 {% if response and response.answer_text == opt %}checked{% endif %}
+                 {% if is_submitted %}disabled{% endif %}>
+          <span>{{ opt }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% elif question.question_type == 'true_false' %}
+      <div class="space-y-2 mt-3">
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" name="answer_{{ question.id }}" value="True"
+                 {% if response and response.answer_text == 'True' %}checked{% endif %}
+                 {% if is_submitted %}disabled{% endif %}>
+          <span>True</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-slate-700">
+          <input type="radio" name="answer_{{ question.id }}" value="False"
+                 {% if response and response.answer_text == 'False' %}checked{% endif %}
+                 {% if is_submitted %}disabled{% endif %}>
+          <span>False</span>
+        </label>
+      </div>
+      {% else %}
+      <textarea name="answer_{{ question.id }}" rows="3" {% if is_submitted %}disabled{% endif %}
+                class="mt-3 w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200">{% if response %}{{ response.answer_text }}{% endif %}</textarea>
+      {% endif %}
+
+      {% if is_submitted %}
+      <div class="mt-3 text-xs">
+        <p class="{% if response and response.is_correct %}text-emerald-600{% else %}text-red-500{% endif %}">
+          Your answer: {% if response and response.answer_text %}{{ response.answer_text }}{% else %}No answer{% endif %}
+        </p>
+        <p class="text-slate-500 mt-1">Correct answer: {{ question.correct_answer|default:'Not provided' }}</p>
+        <p class="text-slate-500 mt-1">Awarded: {% if response %}{{ response.awarded_marks|floatformat:-2 }}{% else %}0{% endif %}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endwith %}
+    {% endfor %}
+
+    {% if not is_submitted %}
+    <button type="submit" class="w-full text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition py-3 rounded-xl">
+      Submit Quiz
+    </button>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

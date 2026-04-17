@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Grades - EduFlow{% endblock %}
+{% block page_title %}My Grades{% endblock %}
+{% block page_subtitle %}Real-time assignment and quiz performance{% endblock %}
+{% block nav_grades %}active{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Assignment Avg</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ grade_data.assignment_average }}%</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Quiz Avg</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ grade_data.quiz_average }}%</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Graded Assignments</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ grade_data.graded_assignments }}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Quiz Attempts</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ grade_data.quiz_attempts }}</p>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-5">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100">
+        <h3 class="font-semibold text-slate-800">Assignment Grades</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-xs text-slate-500 bg-slate-50">
+            <tr>
+              <th class="text-left px-4 py-3">Assignment</th>
+              <th class="text-left px-4 py-3">Course</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Score</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for submission in submissions %}
+            <tr>
+              <td class="px-4 py-3 text-slate-700">{{ submission.assignment.title }}</td>
+              <td class="px-4 py-3 text-slate-500">{{ submission.assignment.course.title }}</td>
+              <td class="px-4 py-3">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full {% if submission.status == 'graded' %}bg-emerald-50 text-emerald-700{% elif submission.status == 'late' %}bg-red-50 text-red-600{% else %}bg-amber-50 text-amber-600{% endif %}">
+                  {{ submission.get_status_display }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-slate-700">
+                {% if submission.score is not None %}{{ submission.score|floatformat:-2 }}/{{ submission.assignment.max_score }}{% else %}-{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No assignment submissions yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100">
+        <h3 class="font-semibold text-slate-800">Quiz Grades</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-xs text-slate-500 bg-slate-50">
+            <tr>
+              <th class="text-left px-4 py-3">Quiz</th>
+              <th class="text-left px-4 py-3">Course</th>
+              <th class="text-left px-4 py-3">Submitted</th>
+              <th class="text-left px-4 py-3">Score</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for attempt in quiz_attempts_list %}
+            <tr>
+              <td class="px-4 py-3 text-slate-700">{{ attempt.quiz.title }}</td>
+              <td class="px-4 py-3 text-slate-500">{{ attempt.quiz.course.title }}</td>
+              <td class="px-4 py-3 text-slate-500">{% if attempt.submitted_at %}{{ attempt.submitted_at|date:"M d, Y H:i" }}{% else %}In progress{% endif %}</td>
+              <td class="px-4 py-3 text-slate-700">{{ attempt.score|floatformat:-2 }}/{{ attempt.quiz.total_marks }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500">No quiz attempts yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

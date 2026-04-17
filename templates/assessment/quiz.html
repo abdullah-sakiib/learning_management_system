@@ -1,0 +1,552 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz — EduFlow{% endblock %}
+{% block page_title %}Quizzes{% endblock %}
+{% block page_subtitle %}{% if is_student %}Test your knowledge{% else %}Manage quizzes and review attempts{% endif %}{% endblock %}
+{% block nav_quiz %}active{% endblock %}
+{% block user_name %}{{ current_user_name }}{% endblock %}
+{% block user_role %}{{ current_user_role|title }}{% endblock %}
+{% block topbar_user %}{{ current_user_name }}{% endblock %}
+{% block topbar_role %}{{ current_user_role|title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); }
+
+  /* Quiz option */
+  .quiz-option {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .quiz-option:hover { border-color: #a5b4fc; background: #f5f3ff; }
+  .quiz-option.selected { border-color: #4f46e5; background: #eef2ff; }
+  .quiz-option.selected .opt-circle {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: white;
+  }
+  .quiz-option.correct { border-color: #22c55e; background: #f0fdf4; }
+  .quiz-option.correct .opt-circle { background: #22c55e; border-color: #22c55e; color: white; }
+  .quiz-option.wrong  { border-color: #ef4444; background: #fef2f2; }
+  .quiz-option.wrong  .opt-circle  { background: #ef4444; border-color: #ef4444; color: white; }
+
+  /* Timer ring */
+  .timer-ring-bg  { fill: none; stroke: #e2e8f0; stroke-width: 4; }
+  .timer-ring-fg  {
+    fill: none;
+    stroke: #4f46e5;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+  }
+  .timer-ring-fg.warning  { stroke: #f59e0b; }
+  .timer-ring-fg.critical { stroke: #ef4444; }
+
+  /* Question nav dots */
+  .q-dot {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .q-dot.current  { background: #4f46e5; color: white; }
+  .q-dot.answered { background: #22c55e; color: white; }
+  .q-dot.skipped  { background: #f59e0b; color: white; }
+
+  /* Progress bar */
+  .quiz-progress { transition: width 0.5s ease; }
+
+  /* Result score ring */
+  .score-ring-fg {
+    fill: none;
+    stroke: #22c55e;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Quiz card hover */
+  .quiz-list-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .quiz-list-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════ QUIZ LIST VIEW ══════════ -->
+<div id="quiz-list-view">
+
+  {% if is_instructor or is_admin %}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6 reveal">
+    <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+      <div>
+        <h3 class="font-semibold text-slate-800 text-sm">Create Quiz</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Create a quiz for one of your courses.</p>
+      </div>
+    </div>
+
+    {% if instructor_courses %}
+    <form method="post" class="grid md:grid-cols-4 gap-3">
+      {% csrf_token %}
+      <input name="title" type="text" placeholder="Quiz title" required
+             class="md:col-span-2 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+
+      <select name="course_id" required
+              class="border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200">
+        <option value="">Select course</option>
+        {% for course in instructor_courses %}
+        <option value="{{ course.id }}">{{ course.title }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit"
+              class="btn-primary text-white font-semibold rounded-xl px-4 py-2.5 text-sm inline-flex items-center justify-center gap-2">
+        <i class="ri-add-circle-line"></i> Create
+      </button>
+
+            <div>
+         <label class="block text-xs font-semibold text-slate-500 mb-1">Total marks</label>
+         <input name="total_marks" type="number" min="1" value="100"
+           class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+           placeholder="Total marks" />
+            </div>
+            <div>
+         <label class="block text-xs font-semibold text-slate-500 mb-1">Time limit (minutes)</label>
+         <input name="time_limit_minutes" type="number" min="1" value="30"
+           class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200"
+           placeholder="Time (minutes)" />
+            </div>
+    </form>
+    {% else %}
+    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      No published course found for your account. Create a course first, then add quizzes.
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 reveal">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div class="w-9 h-9 bg-primary-50 rounded-xl flex items-center justify-center mb-2"><i class="ri-questionnaire-line text-primary-500"></i></div>
+      <p class="text-2xl font-bold text-slate-800">{{ quiz_stats.total }}</p>
+      <p class="text-xs text-slate-400 mt-0.5">Total quizzes</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div class="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center mb-2"><i class="ri-checkbox-circle-line text-emerald-500"></i></div>
+      <p class="text-2xl font-bold text-slate-800">{{ quiz_stats.completed }}</p>
+      <p class="text-xs text-slate-400 mt-0.5">{% if is_student %}Completed{% else %}Students attempted{% endif %}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center mb-2"><i class="ri-time-line text-amber-500"></i></div>
+      <p class="text-2xl font-bold text-slate-800">{{ quiz_stats.pending }}</p>
+      <p class="text-xs text-slate-400 mt-0.5">{% if is_student %}Pending{% else %}Students not attempted{% endif %}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <div class="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center mb-2"><i class="ri-star-line text-violet-500"></i></div>
+      <p class="text-2xl font-bold text-slate-800">{{ quiz_stats.avg_pct }}%</p>
+      <p class="text-xs text-slate-400 mt-0.5">Average score</p>
+    </div>
+  </div>
+
+  {% if is_instructor or is_admin %}
+  <div class="grid sm:grid-cols-3 gap-4 mb-6 reveal">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Total Attempts Submitted</p>
+      <p class="text-xl font-bold text-slate-800 mt-1">{{ quiz_stats.total_attempts }}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Students In Your Quiz Courses</p>
+      <p class="text-xl font-bold text-slate-800 mt-1">{{ quiz_stats.total_students }}</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+      <p class="text-xs text-slate-500">Overall Participation</p>
+      <p class="text-xl font-bold text-emerald-600 mt-1">{{ quiz_stats.participation_pct }}%</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quiz cards grid -->
+  <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 reveal">
+    {% for card in quiz_cards %}
+    <div class="quiz-list-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="h-2 {% if is_student and card.is_completed %}bg-emerald-400{% elif is_student %}bg-amber-400{% else %}bg-indigo-400{% endif %}"></div>
+      <div class="p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center"><i class="ri-questionnaire-line text-indigo-600"></i></div>
+          {% if is_student %}
+          <span class="text-xs font-semibold {% if card.is_completed %}text-emerald-600 bg-emerald-50 border border-emerald-100{% else %}text-amber-500 bg-amber-50 border border-amber-100{% endif %} px-2 py-0.5 rounded-full">
+            {% if card.is_completed %}Completed{% else %}Pending{% endif %}
+          </span>
+          {% else %}
+          <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">Manage</span>
+          {% endif %}
+        </div>
+
+        <h3 class="font-semibold text-slate-800 text-sm mb-1">{{ card.title }}</h3>
+        <p class="text-xs text-slate-400 mb-3">{{ card.course_title }} · {{ card.question_count }} questions · {{ card.time_limit_minutes }} min</p>
+
+        {% if is_student and card.is_completed %}
+        <div class="flex items-center gap-2 mb-3">
+          <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-emerald-400 rounded-full" style="width:{{ card.score_pct }}%"></div>
+          </div>
+          <span class="text-sm font-bold text-emerald-600">{{ card.score_label }}</span>
+        </div>
+        <a href="{% url 'quiz_take' card.id %}" class="w-full text-sm font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition py-2.5 rounded-xl inline-flex items-center justify-center">
+          Review answers
+        </a>
+        {% elif is_student %}
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-4">
+          <span class="flex items-center gap-1"><i class="ri-timer-line"></i> {{ card.time_limit_minutes }} min timer</span>
+          <span>{{ card.total_marks }} pts</span>
+        </div>
+        <a href="{% url 'quiz_take' card.id %}" class="btn-primary w-full text-white font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
+          <i class="ri-play-circle-line"></i> Start Quiz
+        </a>
+        {% else %}
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-4">
+          <span class="flex items-center gap-1"><i class="ri-user-follow-line"></i> {{ card.attempt_count }}/{{ card.eligible_students }} students</span>
+          <span>{{ card.participation_pct }}% participation</span>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-4">
+          <span class="flex items-center gap-1"><i class="ri-bar-chart-grouped-line"></i> Avg score</span>
+          <span class="font-semibold text-slate-700">{{ card.avg_score_pct }}%</span>
+        </div>
+        <details class="mb-3 rounded-xl border border-slate-100 overflow-hidden">
+          <summary class="list-none cursor-pointer px-3 py-2 text-xs font-semibold text-slate-700 flex items-center justify-between">
+            <span>Student Breakdown</span>
+            <span class="text-slate-400">{{ card.attempted_students|length }} done / {{ card.not_attempted_students|length }} pending</span>
+          </summary>
+          <div class="border-t border-slate-100 px-3 py-3 grid sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <p class="font-semibold text-emerald-600 mb-2">Attempted</p>
+              <div class="space-y-1 max-h-28 overflow-auto pr-1">
+                {% for student in card.attempted_students %}
+                <p class="text-slate-700">{{ student.name }}</p>
+                {% empty %}
+                <p class="text-slate-400">No one has attempted yet.</p>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <p class="font-semibold text-amber-600 mb-2">Not Attempted</p>
+              <div class="space-y-1 max-h-28 overflow-auto pr-1">
+                {% for student in card.not_attempted_students %}
+                <p class="text-slate-700">{{ student.name }}</p>
+                {% empty %}
+                <p class="text-slate-400">All enrolled students attempted.</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </details>
+        <div class="grid grid-cols-2 gap-2">
+          <a href="{% url 'instructor_edit_quiz' card.id %}" class="text-center text-sm font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition py-2.5 rounded-xl">
+            Edit Quiz
+          </a>
+          <a href="{% url 'instructor_quiz_attempts' card.id %}" class="text-center text-sm font-medium text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition py-2.5 rounded-xl">
+            Evaluate
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="sm:col-span-2 xl:col-span-3 bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
+      <p class="text-slate-700 font-semibold mb-1">No quizzes available yet</p>
+      <p class="text-sm text-slate-400">{% if is_student %}Enroll in a course and ask your instructor to publish quizzes.{% else %}Create your first quiz using the form above.{% endif %}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ══════════ QUIZ TAKING VIEW (hidden) ══════════ -->
+<div id="quiz-taking-view" class="hidden max-w-3xl mx-auto">
+
+  <!-- Quiz header -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-5 reveal">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h2 class="font-bold text-slate-800 text-base">Quiz #4 — Sorting Algorithms</h2>
+        <p class="text-xs text-slate-400">10 questions</p>
+      </div>
+      <!-- Timer -->
+      <div class="flex items-center gap-3">
+        <div class="relative w-14 h-14">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <circle class="timer-ring-bg" cx="28" cy="28" r="22"/>
+            <circle class="timer-ring-fg" id="timer-ring" cx="28" cy="28" r="22"
+                    stroke-dasharray="138.2" stroke-dashoffset="0"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-sm font-bold text-slate-800" id="timer-display">15:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Progress bar -->
+    <div class="flex items-center gap-3">
+      <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div class="quiz-progress h-full bg-primary-500 rounded-full" id="quiz-progress-bar" style="width:10%"></div>
+      </div>
+      <span class="text-xs text-slate-500 flex-shrink-0">Q <span id="q-current">1</span> of 10</span>
+    </div>
+  </div>
+
+  <!-- Question nav dots -->
+  <div class="flex flex-wrap gap-2 mb-5 reveal">
+    {% for i in "1234567890" %}
+    <button onclick="goQuestion({{ forloop.counter }})" id="qdot-{{ forloop.counter }}"
+      class="q-dot w-8 h-8 rounded-lg text-xs font-bold border border-slate-200 text-slate-500
+      {% if forloop.counter == 1 %}current{% endif %}">
+      {{ forloop.counter }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- Question card -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4 reveal" id="question-card">
+
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-xs font-bold text-primary-600 bg-primary-50 px-2.5 py-1 rounded-full">Question 1</span>
+      <span class="text-xs text-slate-400">Multiple choice</span>
+    </div>
+
+    <p class="font-semibold text-slate-800 text-base leading-relaxed mb-6" id="q-text">
+      What is the average time complexity of Quick Sort?
+    </p>
+
+    <div class="space-y-3" id="options-container">
+      <div class="quiz-option flex items-center gap-3 p-4 rounded-xl border-2 border-slate-100" onclick="selectOption(this, 0)">
+        <span class="opt-circle w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0 transition-all">A</span>
+        <span class="text-sm text-slate-700">O(n²)</span>
+      </div>
+      <div class="quiz-option flex items-center gap-3 p-4 rounded-xl border-2 border-slate-100" onclick="selectOption(this, 1)">
+        <span class="opt-circle w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0 transition-all">B</span>
+        <span class="text-sm text-slate-700">O(n log n)</span>
+      </div>
+      <div class="quiz-option flex items-center gap-3 p-4 rounded-xl border-2 border-slate-100" onclick="selectOption(this, 2)">
+        <span class="opt-circle w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0 transition-all">C</span>
+        <span class="text-sm text-slate-700">O(n)</span>
+      </div>
+      <div class="quiz-option flex items-center gap-3 p-4 rounded-xl border-2 border-slate-100" onclick="selectOption(this, 3)">
+        <span class="opt-circle w-8 h-8 rounded-lg border-2 border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 flex-shrink-0 transition-all">D</span>
+        <span class="text-sm text-slate-700">O(log n)</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Nav buttons -->
+  <div class="flex items-center justify-between gap-3">
+    <button onclick="prevQuestion()"
+      class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition px-5 py-3 rounded-xl">
+      <i class="ri-arrow-left-line"></i> Previous
+    </button>
+    <button onclick="submitQuiz()"
+      class="inline-flex items-center gap-2 text-sm font-medium text-red-500 border border-red-200 hover:bg-red-50 transition px-4 py-3 rounded-xl">
+      <i class="ri-flag-line"></i> Submit Quiz
+    </button>
+    <button onclick="nextQuestion()" id="next-btn"
+      class="btn-primary inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm">
+      Next <i class="ri-arrow-right-line"></i>
+    </button>
+  </div>
+
+</div>
+
+<!-- ══════════ RESULTS VIEW (hidden) ══════════ -->
+<div id="quiz-results-view" class="hidden max-w-2xl mx-auto">
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center reveal">
+
+    <!-- Score ring -->
+    <div class="relative w-32 h-32 mx-auto mb-5">
+      <svg width="128" height="128" viewBox="0 0 128 128">
+        <circle fill="none" stroke="#e2e8f0" stroke-width="8" cx="64" cy="64" r="52"/>
+        <circle class="score-ring-fg" id="result-ring" cx="64" cy="64" r="52"
+                stroke-dasharray="326.7" stroke-dashoffset="32.7"/>
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <span class="text-3xl font-bold text-emerald-600" id="result-score">9</span>
+        <span class="text-xs text-slate-400">out of 10</span>
+      </div>
+    </div>
+
+    <h2 class="font-bold text-slate-800 text-xl mb-1">Quiz Completed!</h2>
+    <p class="text-slate-500 text-sm mb-6">Quiz #4 — Sorting Algorithms</p>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="bg-emerald-50 rounded-xl p-3">
+        <p class="text-lg font-bold text-emerald-600">9</p>
+        <p class="text-xs text-emerald-700">Correct</p>
+      </div>
+      <div class="bg-red-50 rounded-xl p-3">
+        <p class="text-lg font-bold text-red-500">1</p>
+        <p class="text-xs text-red-600">Wrong</p>
+      </div>
+      <div class="bg-primary-50 rounded-xl p-3">
+        <p class="text-lg font-bold text-primary-600">90%</p>
+        <p class="text-xs text-primary-700">Score</p>
+      </div>
+    </div>
+
+    <!-- Answer review -->
+    <div class="text-left space-y-3 mb-6">
+      <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Answer Review</p>
+      <div class="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
+        <i class="ri-checkbox-circle-fill text-emerald-500 flex-shrink-0"></i>
+        <div class="flex-1 text-xs">
+          <p class="font-medium text-slate-700">Q1: What is the avg time complexity of Quick Sort?</p>
+          <p class="text-emerald-600 mt-0.5">Your answer: O(n log n) ✓</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-red-50 rounded-xl">
+        <i class="ri-close-circle-fill text-red-400 flex-shrink-0"></i>
+        <div class="flex-1 text-xs">
+          <p class="font-medium text-slate-700">Q2: What is the worst case of Quick Sort?</p>
+          <p class="text-red-500 mt-0.5">Your answer: O(n log n) · Correct: O(n²)</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button onclick="backToList()" class="flex-1 inline-flex items-center justify-center gap-2 text-sm font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition py-3 rounded-xl">
+        <i class="ri-arrow-left-line"></i> Back to quizzes
+      </button>
+      <a href="{% url 'courses' %}" class="flex-1 btn-primary inline-flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl text-sm">
+        Continue learning <i class="ri-arrow-right-line"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // ── Quiz list / taking / results view switching ──
+  function startQuiz() {
+    document.getElementById('quiz-list-view').classList.add('hidden');
+    document.getElementById('quiz-taking-view').classList.remove('hidden');
+    startTimer(15 * 60);
+  }
+
+  function backToList() {
+    document.getElementById('quiz-results-view').classList.add('hidden');
+    document.getElementById('quiz-list-view').classList.remove('hidden');
+  }
+
+  // ── Timer ──
+  let timeLeft = 0;
+  let timerInterval;
+  const TOTAL_TIME = 15 * 60;
+  const CIRCUMFERENCE = 2 * Math.PI * 22; // ~138.2
+
+  function startTimer(seconds) {
+    timeLeft = seconds;
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      const mins = Math.floor(timeLeft / 60);
+      const secs = timeLeft % 60;
+      document.getElementById('timer-display').textContent =
+        `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+      // Ring progress
+      const pct    = timeLeft / TOTAL_TIME;
+      const offset = CIRCUMFERENCE * (1 - pct);
+      const ring   = document.getElementById('timer-ring');
+      ring.style.strokeDashoffset = offset;
+      ring.className = 'timer-ring-fg' + (pct < 0.2 ? ' critical' : pct < 0.4 ? ' warning' : '');
+
+      if (timeLeft <= 0) { clearInterval(timerInterval); submitQuiz(); }
+    }, 1000);
+  }
+
+  // ── Questions ──
+  let currentQ = 1;
+  let answers  = {};
+  const totalQ  = 10;
+
+  function updateProgress() {
+    const pct = (currentQ / totalQ) * 100;
+    document.getElementById('quiz-progress-bar').style.width = pct + '%';
+    document.getElementById('q-current').textContent = currentQ;
+  }
+
+  function goQuestion(n) {
+    // Update dots
+    document.querySelectorAll('.q-dot').forEach((d, i) => {
+      d.classList.remove('current');
+      if (answers[i+1] !== undefined) d.classList.add('answered');
+    });
+    document.getElementById('qdot-' + n).classList.add('current');
+    currentQ = n;
+    updateProgress();
+    // Reset options UI
+    document.querySelectorAll('.quiz-option').forEach(o => {
+      o.classList.remove('selected');
+      if (answers[currentQ] === parseInt(o.dataset.idx)) o.classList.add('selected');
+    });
+    // Last question: change button
+    document.getElementById('next-btn').textContent = currentQ === totalQ ? 'Submit ' : 'Next ';
+    document.getElementById('next-btn').innerHTML   = currentQ === totalQ
+      ? '<i class="ri-flag-fill mr-1"></i>Submit'
+      : 'Next <i class="ri-arrow-right-line ml-1"></i>';
+  }
+
+  function selectOption(el, idx) {
+    document.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.dataset.idx = idx;
+    answers[currentQ] = idx;
+    document.getElementById('qdot-' + currentQ).classList.add('answered');
+  }
+
+  function nextQuestion() {
+    if (currentQ < totalQ) goQuestion(currentQ + 1);
+    else submitQuiz();
+  }
+
+  function prevQuestion() {
+    if (currentQ > 1) goQuestion(currentQ - 1);
+  }
+
+  function submitQuiz() {
+    clearInterval(timerInterval);
+    document.getElementById('quiz-taking-view').classList.add('hidden');
+    document.getElementById('quiz-results-view').classList.remove('hidden');
+    // Animate score ring
+    setTimeout(() => {
+      const score  = 9;
+      const pct    = score / 10;
+      const CIRC   = 2 * Math.PI * 52; // ~326.7
+      const offset = CIRC * (1 - pct);
+      document.getElementById('result-ring').style.strokeDashoffset = offset;
+    }, 200);
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e,i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 60);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}

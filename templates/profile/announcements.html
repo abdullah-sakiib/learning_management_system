@@ -1,534 +1,87 @@
 {% extends 'base.html' %}
 
-{% block title %}Announcements — EduFlow{% endblock %}
+{% block title %}Announcements - EduFlow{% endblock %}
 {% block page_title %}Announcements{% endblock %}
-{% block page_subtitle %}Stay updated with your courses{% endblock %}
+{% block page_subtitle %}Course and global updates{% endblock %}
 {% block nav_announcements %}active{% endblock %}
-{% block user_name %}John Doe{% endblock %}
-{% block user_role %}Student{% endblock %}
-{% block topbar_user %}John Doe{% endblock %}
-{% block topbar_role %}Student{% endblock %}
 
 {% block extra_head %}
 <style>
-  .reveal {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
-
-  /* Announcement card */
   .ann-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+    border-color: #e0e7ff;
   }
   .ann-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(99,102,241,0.08);
-    border-color: #c7d2fe;
+    border-color: #a5b4fc;
   }
-
-  /* Unread indicator */
-  .unread-dot {
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.4; }
-  }
-
-  /* Priority badges */
-  .badge-urgent  { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
-  .badge-info    { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; }
-  .badge-general { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
-
-  /* Input focus */
-  .input-field:focus {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
-  }
-
-  /* Post form btn */
-  .btn-primary {
-    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
-    transition: all 0.25s ease;
-  }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
-
-  /* Filter pill active */
-  .filter-pill.active {
-    background: #4f46e5;
-    color: white;
-    border-color: #4f46e5;
-  }
-
-  /* Expand/collapse */
-  .ann-body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease;
-  }
-  .ann-body.open { max-height: 500px; }
-  .chevron { transition: transform 0.3s ease; }
-  .chevron.open { transform: rotate(180deg); }
 </style>
 {% endblock %}
 
 {% block content %}
-
-<div class="max-w-5xl mx-auto">
-
-  <!-- ══════════════════════════════════
-       HEADER + FILTER BAR
-  ══════════════════════════════════ -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 reveal">
-
-    <!-- Filter pills -->
-    <div class="flex flex-wrap items-center gap-2">
-      <button onclick="filterAnn('all')" id="filter-all"
-        class="filter-pill active text-xs font-semibold border border-slate-200 px-3.5 py-1.5 rounded-full transition-all">
-        All
-      </button>
-      <button onclick="filterAnn('urgent')" id="filter-urgent"
-        class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3.5 py-1.5 rounded-full transition-all hover:border-red-300 hover:text-red-500">
-        <i class="ri-alarm-warning-line mr-1"></i>Urgent
-      </button>
-      <button onclick="filterAnn('info')" id="filter-info"
-        class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3.5 py-1.5 rounded-full transition-all hover:border-blue-300 hover:text-blue-500">
-        <i class="ri-information-line mr-1"></i>Info
-      </button>
-      <button onclick="filterAnn('general')" id="filter-general"
-        class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3.5 py-1.5 rounded-full transition-all hover:border-emerald-300 hover:text-emerald-500">
-        <i class="ri-chat-1-line mr-1"></i>General
-      </button>
-      <button onclick="filterAnn('unread')" id="filter-unread"
-        class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3.5 py-1.5 rounded-full transition-all">
-        Unread <span class="ml-1 bg-primary-500 text-white text-xs px-1.5 py-0.5 rounded-full">2</span>
-      </button>
-    </div>
-
-    <!-- Search + Mark all read -->
-    <div class="flex items-center gap-2">
-      <div class="relative">
-        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-        <input type="text" id="ann-search" placeholder="Search announcements..."
-          oninput="searchAnn(this.value)"
-          class="input-field pl-8 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 w-52 transition-all"/>
+<div class="max-w-6xl mx-auto grid lg:grid-cols-3 gap-5">
+  <div class="lg:col-span-2 space-y-4">
+    {% if messages %}
+    <div class="space-y-2">
+      {% for message in messages %}
+      <div class="rounded-xl px-4 py-3 text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-100{% else %}bg-emerald-50 text-emerald-700 border border-emerald-100{% endif %}">
+        {{ message }}
       </div>
-      <button onclick="markAllRead()"
-        class="text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-3 py-2 rounded-xl flex-shrink-0">
-        <i class="ri-check-double-line mr-1"></i>Mark all read
-      </button>
+      {% endfor %}
     </div>
+    {% endif %}
+
+    <div class="ann-card rounded-2xl border shadow-sm p-5">
+      <h2 class="text-lg font-bold text-slate-800">Recent Announcements</h2>
+      <p class="text-sm text-slate-500 mt-1">Showing announcements relevant to your role and courses.</p>
+    </div>
+
+    {% for announcement in announcements %}
+    <div class="ann-card rounded-2xl border shadow-sm p-5 transition">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="font-semibold text-slate-800">{{ announcement.title }}</h3>
+          <p class="text-xs text-slate-500 mt-1">
+            {% if announcement.is_global %}Global{% elif announcement.course %}{{ announcement.course.title }}{% else %}General{% endif %}
+            | {% if announcement.author %}{{ announcement.author.get_full_name|default:announcement.author.username }}{% else %}System{% endif %}
+            | {{ announcement.created_at|date:"M d, Y H:i" }}
+          </p>
+        </div>
+      </div>
+      <p class="text-sm text-slate-700 mt-3 leading-relaxed">{{ announcement.body }}</p>
+    </div>
+    {% empty %}
+    <div class="ann-card rounded-2xl border shadow-sm p-8 text-center">
+      <p class="font-semibold text-slate-700">No announcements yet</p>
+      <p class="text-sm text-slate-400 mt-1">Announcements will appear here once posted.</p>
+    </div>
+    {% endfor %}
   </div>
 
-
-  <div class="grid lg:grid-cols-3 gap-6">
-
-    <!-- ───── LEFT: Announcements list ───── -->
-    <div class="lg:col-span-2 space-y-4" id="ann-list">
-
-      <!-- UNREAD: Announcement 1 -->
-      <div class="ann-card bg-white rounded-2xl border-2 border-primary-100 shadow-sm p-5 reveal" data-type="urgent" data-read="false">
-        <div class="flex items-start gap-3">
-
-          <!-- Avatar -->
-          <img src="https://ui-avatars.com/api/?name=P+S&background=4f46e5&color=fff&size=32"
-               class="w-9 h-9 rounded-xl flex-shrink-0 mt-0.5"/>
-
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-2 mb-1">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <p class="text-sm font-bold text-slate-800">Assignment Deadline Extended</p>
-                  <span class="badge-urgent text-xs font-semibold px-2 py-0.5 rounded-full">Urgent</span>
-                  <span class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 unread-dot"></span>
-                </div>
-                <p class="text-xs text-slate-400 mt-0.5">
-                  <span class="font-medium text-primary-600">Prof. Pomona Sprout</span>
-                  &nbsp;·&nbsp; Algorithms 101 &nbsp;·&nbsp; 2 hours ago
-                </p>
-              </div>
-              <button onclick="toggleAnn(this)" class="flex-shrink-0 text-slate-400 hover:text-primary-600 transition p-1">
-                <i class="ri-arrow-down-s-line chevron text-lg"></i>
-              </button>
-            </div>
-
-            <!-- Preview -->
-            <p class="text-sm text-slate-600 leading-relaxed">
-              The deadline for Week 5 Assignment has been extended by 2 days. New deadline is <strong>September 27, 11:59 PM</strong>.
-            </p>
-
-            <!-- Expanded body -->
-            <div class="ann-body">
-              <div class="mt-3 pt-3 border-t border-slate-100">
-                <p class="text-sm text-slate-600 leading-relaxed mb-3">
-                  Due to the recent public holiday, the submission window for the Week 5 Sorting Algorithms assignment has been extended.
-                  Please use the extra time wisely — quality of analysis matters more than quantity. Make sure to reference at least 3 academic sources.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                    <i class="ri-calendar-check-line text-primary-500"></i> New deadline: Sep 27
-                  </span>
-                  <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                    <i class="ri-book-2-line text-primary-500"></i> Algorithms 101
-                  </span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- UNREAD: Announcement 2 -->
-      <div class="ann-card bg-white rounded-2xl border-2 border-primary-100 shadow-sm p-5 reveal" data-type="info" data-read="false">
-        <div class="flex items-start gap-3">
-          <img src="https://ui-avatars.com/api/?name=S+S&background=7c3aed&color=fff&size=32"
-               class="w-9 h-9 rounded-xl flex-shrink-0 mt-0.5"/>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-2 mb-1">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <p class="text-sm font-bold text-slate-800">Week 6 Lecture Notes Available</p>
-                  <span class="badge-info text-xs font-semibold px-2 py-0.5 rounded-full">Info</span>
-                  <span class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 unread-dot"></span>
-                </div>
-                <p class="text-xs text-slate-400 mt-0.5">
-                  <span class="font-medium text-violet-600">Prof. Severus Snape</span>
-                  &nbsp;·&nbsp; Introduction to Database &nbsp;·&nbsp; 5 hours ago
-                </p>
-              </div>
-              <button onclick="toggleAnn(this)" class="flex-shrink-0 text-slate-400 hover:text-primary-600 transition p-1">
-                <i class="ri-arrow-down-s-line chevron text-lg"></i>
-              </button>
-            </div>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Week 6 lecture notes on <strong>Database Normalization (3NF & BCNF)</strong> have been uploaded to the course portal.
-            </p>
-            <div class="ann-body">
-              <div class="mt-3 pt-3 border-t border-slate-100">
-                <p class="text-sm text-slate-600 leading-relaxed mb-3">
-                  Please review the notes before Friday's class. We will be doing in-class exercises on 3NF decomposition.
-                  The PDF includes worked examples and practice problems that will also be useful for the upcoming quiz.
-                </p>
-                <a href="#" class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 transition px-3 py-2 rounded-lg">
-                  <i class="ri-file-pdf-line"></i> Download lecture notes
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- READ: Announcement 3 -->
-      <div class="ann-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal" data-type="general" data-read="true">
-        <div class="flex items-start gap-3">
-          <img src="https://ui-avatars.com/api/?name=M+M&background=0ea5e9&color=fff&size=32"
-               class="w-9 h-9 rounded-xl flex-shrink-0 mt-0.5 opacity-80"/>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-2 mb-1">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <p class="text-sm font-semibold text-slate-600">Midterm Exam Schedule Released</p>
-                  <span class="badge-general text-xs font-semibold px-2 py-0.5 rounded-full">General</span>
-                </div>
-                <p class="text-xs text-slate-400 mt-0.5">
-                  <span class="font-medium text-sky-600">Prof. Minerva McGonagall</span>
-                  &nbsp;·&nbsp; Computer Networks &nbsp;·&nbsp; 1 day ago
-                </p>
-              </div>
-              <button onclick="toggleAnn(this)" class="flex-shrink-0 text-slate-400 hover:text-primary-600 transition p-1">
-                <i class="ri-arrow-down-s-line chevron text-lg"></i>
-              </button>
-            </div>
-            <p class="text-sm text-slate-500 leading-relaxed">
-              The midterm examination schedule for Computer Networks has been finalized. Exam will be held on <strong>October 5</strong>.
-            </p>
-            <div class="ann-body">
-              <div class="mt-3 pt-3 border-t border-slate-100">
-                <p class="text-sm text-slate-600 leading-relaxed mb-3">
-                  Exam will cover Weeks 1–6 content including OSI model, TCP/IP stack, subnetting, and routing protocols.
-                  Allowed materials: one A4 formula sheet (handwritten). Calculators are not permitted.
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                    <i class="ri-calendar-line text-sky-500"></i> Oct 5 · 9:00 AM
-                  </span>
-                  <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                    <i class="ri-map-pin-line text-sky-500"></i> Hall B, Room 204
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- READ: Announcement 4 -->
-      <div class="ann-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal" data-type="info" data-read="true">
-        <div class="flex items-start gap-3">
-          <img src="https://ui-avatars.com/api/?name=D+U&background=ef4444&color=fff&size=32"
-               class="w-9 h-9 rounded-xl flex-shrink-0 mt-0.5 opacity-80"/>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-2 mb-1">
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <p class="text-sm font-semibold text-slate-600">New Quiz Added — Week 4</p>
-                  <span class="badge-info text-xs font-semibold px-2 py-0.5 rounded-full">Info</span>
-                </div>
-                <p class="text-xs text-slate-400 mt-0.5">
-                  <span class="font-medium text-red-500">Prof. Dolores Umbridge</span>
-                  &nbsp;·&nbsp; Basic Mathematics &nbsp;·&nbsp; 2 days ago
-                </p>
-              </div>
-              <button onclick="toggleAnn(this)" class="flex-shrink-0 text-slate-400 hover:text-primary-600 transition p-1">
-                <i class="ri-arrow-down-s-line chevron text-lg"></i>
-              </button>
-            </div>
-            <p class="text-sm text-slate-500 leading-relaxed">
-              A new practice quiz on <strong>Integration Techniques</strong> has been added. Not graded — for self-assessment only.
-            </p>
-            <div class="ann-body">
-              <div class="mt-3 pt-3 border-t border-slate-100">
-                <p class="text-sm text-slate-600 leading-relaxed mb-3">
-                  The quiz contains 10 multiple choice questions and should take approximately 20 minutes.
-                  Results are shown immediately after submission. You may attempt it multiple times.
-                </p>
-                <a href="{% url 'quiz' %}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition px-3 py-2 rounded-lg">
-                  <i class="ri-questionnaire-line"></i> Take quiz now
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Empty state (hidden) -->
-      <div id="empty-state" class="hidden text-center py-16">
-        <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <i class="ri-megaphone-line text-slate-400 text-3xl"></i>
-        </div>
-        <p class="text-slate-600 font-semibold">No announcements found</p>
-        <p class="text-slate-400 text-sm mt-1">Try a different filter or search term.</p>
-      </div>
-
+  <div class="space-y-4">
+    {% if is_instructor or is_admin %}
+    <div class="ann-card rounded-2xl border shadow-sm p-5">
+      <h3 class="font-semibold text-slate-800 mb-3">Post Announcement</h3>
+      <form method="post" action="{% url 'announcements' %}" class="space-y-3">
+        {% csrf_token %}
+        <input type="text" name="title" placeholder="Title" required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" />
+        <select name="course_id" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm">
+          <option value="">Global announcement (all users)</option>
+          {% for course in posting_courses %}
+          <option value="{{ course.id }}">{{ course.title }}</option>
+          {% endfor %}
+        </select>
+        <textarea name="body" rows="4" placeholder="Write your announcement..." required class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm"></textarea>
+        <button type="submit" class="w-full text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition py-2.5 rounded-xl">Post</button>
+      </form>
     </div>
+    {% endif %}
 
-    <!-- ───── RIGHT SIDEBAR ───── -->
-    <div class="space-y-5">
-
-      <!-- POST NEW ANNOUNCEMENT (Instructor/Admin only) -->
-      <!-- Show this block only to instructors: {% if user.role == 'instructor' or user.is_staff %} -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-        <h3 class="font-semibold text-slate-700 text-sm mb-3 flex items-center gap-2">
-          <i class="ri-megaphone-line text-primary-500"></i> Post Announcement
-        </h3>
-        <form method="POST" action="{% url 'announcements' %}">
-          {% csrf_token %}
-
-          <div class="mb-3">
-            <input type="text" name="title" placeholder="Announcement title..."
-              class="input-field w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 transition-all"/>
-          </div>
-
-          <div class="mb-3">
-            <select name="course"
-              class="input-field w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 transition-all">
-              <option value="">Select course...</option>
-              <option>Algorithms 101</option>
-              <option>Introduction to Database</option>
-              <option>Basic Mathematics</option>
-              <option>Human Computer Interaction</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <select name="priority"
-              class="input-field w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 transition-all">
-              <option value="general">General</option>
-              <option value="info">Info</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div class="mb-4">
-            <textarea name="body" rows="4" placeholder="Write your announcement here..."
-              class="input-field w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 transition-all resize-none"></textarea>
-          </div>
-
-          <button type="submit"
-            class="btn-primary w-full py-2.5 text-sm font-semibold text-white rounded-xl flex items-center justify-center gap-2">
-            <i class="ri-send-plane-line"></i> Post
-          </button>
-        </form>
+    <div class="ann-card rounded-2xl border shadow-sm p-5">
+      <h3 class="font-semibold text-slate-800 mb-3">Summary</h3>
+      <div class="space-y-2 text-sm">
+        <p class="flex justify-between"><span class="text-slate-500">Visible announcements</span><span class="font-semibold text-slate-800">{{ announcements|length }}</span></p>
       </div>
-      <!-- {% endif %} -->
-
-      <!-- Summary stats -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-        <h3 class="font-semibold text-slate-700 text-sm mb-3">Summary</h3>
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-500">Total announcements</span>
-            <span class="text-xs font-bold text-slate-700">4</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-500">Unread</span>
-            <span class="text-xs font-bold text-primary-600">2</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-500">Urgent</span>
-            <span class="text-xs font-bold text-red-500">1</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-slate-500">This week</span>
-            <span class="text-xs font-bold text-slate-700">3</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active courses -->
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-        <h3 class="font-semibold text-slate-700 text-sm mb-3">Filter by Course</h3>
-        <div class="space-y-2">
-          <button onclick="filterByCourse('all')"
-            class="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-primary-50 text-left transition group">
-            <div class="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-primary-100">
-              <i class="ri-apps-line text-slate-500 group-hover:text-primary-600 text-xs"></i>
-            </div>
-            <span class="text-xs font-medium text-slate-700">All courses</span>
-          </button>
-          <button onclick="filterByCourse('Algorithms 101')"
-            class="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-primary-50 text-left transition group">
-            <div class="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i class="ri-code-s-slash-line text-indigo-600 text-xs"></i>
-            </div>
-            <span class="text-xs font-medium text-slate-700">Algorithms 101</span>
-          </button>
-          <button onclick="filterByCourse('Introduction to Database')"
-            class="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-primary-50 text-left transition group">
-            <div class="w-7 h-7 bg-violet-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i class="ri-database-2-line text-violet-600 text-xs"></i>
-            </div>
-            <span class="text-xs font-medium text-slate-700">Introduction to Database</span>
-          </button>
-          <button onclick="filterByCourse('Computer Networks')"
-            class="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-primary-50 text-left transition group">
-            <div class="w-7 h-7 bg-sky-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i class="ri-computer-line text-sky-600 text-xs"></i>
-            </div>
-            <span class="text-xs font-medium text-slate-700">Computer Networks</span>
-          </button>
-          <button onclick="filterByCourse('Basic Mathematics')"
-            class="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-primary-50 text-left transition group">
-            <div class="w-7 h-7 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i class="ri-pie-chart-line text-emerald-600 text-xs"></i>
-            </div>
-            <span class="text-xs font-medium text-slate-700">Basic Mathematics</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
-
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  // ── Toggle expand/collapse ──
-  function toggleAnn(btn) {
-    const card    = btn.closest('.ann-card');
-    const body    = card.querySelector('.ann-body');
-    const chevron = btn.querySelector('.chevron');
-    body.classList.toggle('open');
-    chevron.classList.toggle('open');
-
-    // Mark as read on open
-    if (body.classList.contains('open')) {
-      card.dataset.read = 'true';
-      card.classList.remove('border-2', 'border-primary-100');
-      card.classList.add('border', 'border-slate-100');
-      const dot = card.querySelector('.unread-dot');
-      if (dot) dot.remove();
-      updateUnreadCount();
-    }
-  }
-
-  // ── Filter by type ──
-  function filterAnn(type) {
-    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-    document.getElementById('filter-' + type).classList.add('active');
-
-    const cards = document.querySelectorAll('.ann-card');
-    let visible = 0;
-    cards.forEach(card => {
-      let show = true;
-      if (type === 'urgent')  show = card.dataset.type === 'urgent';
-      if (type === 'info')    show = card.dataset.type === 'info';
-      if (type === 'general') show = card.dataset.type === 'general';
-      if (type === 'unread')  show = card.dataset.read === 'false';
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-    document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
-  }
-
-  // ── Filter by course text ──
-  function filterByCourse(course) {
-    const cards = document.querySelectorAll('.ann-card');
-    let visible = 0;
-    cards.forEach(card => {
-      const text = card.textContent;
-      const show = course === 'all' || text.includes(course);
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-    document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
-  }
-
-  // ── Search ──
-  function searchAnn(val) {
-    const q = val.toLowerCase();
-    const cards = document.querySelectorAll('.ann-card');
-    let visible = 0;
-    cards.forEach(card => {
-      const show = card.textContent.toLowerCase().includes(q);
-      card.style.display = show ? '' : 'none';
-      if (show) visible++;
-    });
-    document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
-  }
-
-  // ── Mark all read ──
-  function markAllRead() {
-    document.querySelectorAll('.ann-card').forEach(card => {
-      card.dataset.read = 'true';
-      card.classList.remove('border-2', 'border-primary-100');
-      card.classList.add('border', 'border-slate-100');
-      const dot = card.querySelector('.unread-dot');
-      if (dot) dot.remove();
-    });
-    updateUnreadCount();
-  }
-
-  function updateUnreadCount() {
-    const unread = document.querySelectorAll('.ann-card[data-read="false"]').length;
-    const badge = document.querySelector('#filter-unread span');
-    if (badge) badge.textContent = unread;
-    if (unread === 0 && badge) badge.classList.replace('bg-primary-500', 'bg-slate-300');
-  }
-
-  // ── Scroll reveal ──
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach((e, i) => {
-      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80);
-    });
-  }, { threshold: 0.05 });
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-</script>
 {% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Discussion - {{ course.title }} - EduFlow{% endblock %}
+{% block page_title %}Course Discussion{% endblock %}
+{% block page_subtitle %}{{ course.title }}{% endblock %}
+{% block nav_courses %}active{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-5">
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-800">Discussion Zone</h2>
+        <p class="text-sm text-slate-500">Ask doubts, share clarifications, and collaborate with this course cohort.</p>
+      </div>
+      <a href="{% url 'course_detail' course.id %}" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+        Back to course
+      </a>
+    </div>
+  </div>
+
+  {% if can_post %}
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <label class="block text-xs text-slate-500">Post a message</label>
+      <textarea name="message" rows="4" maxlength="2000" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Write your question or answer..."></textarea>
+      <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">
+        Post message
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <h3 class="font-semibold text-slate-800 mb-3">Recent posts</h3>
+    <div class="space-y-3">
+      {% for post in posts %}
+      <article class="border border-slate-100 rounded-xl p-4">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm font-semibold text-slate-800">{{ post.author.get_full_name|default:post.author.username }}</p>
+          <p class="text-xs text-slate-500">{{ post.created_at|date:"M d, Y H:i" }}</p>
+        </div>
+        <p class="text-sm text-slate-700 mt-2 whitespace-pre-wrap">{{ post.message }}</p>
+      </article>
+      {% empty %}
+      <p class="text-sm text-slate-500">No discussion posts yet. Be the first to start the conversation.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

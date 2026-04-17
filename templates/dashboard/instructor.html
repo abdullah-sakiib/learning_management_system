@@ -1,576 +1,189 @@
 {% extends 'base.html' %}
 
-{% block title %}Instructor Dashboard — EduFlow{% endblock %}
+{% block title %}Instructor Dashboard - EduFlow{% endblock %}
 {% block page_title %}Instructor Dashboard{% endblock %}
-{% block page_subtitle %}Manage your courses and students{% endblock %}
+{% block page_subtitle %}Manage courses and student submissions{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
-{% block user_name %}{{ display_name }}{% endblock %}
-{% block user_role %}Instructor{% endblock %}
-{% block topbar_user %}{{ display_name }}{% endblock %}
-{% block topbar_role %}Instructor{% endblock %}
 
 {% block extra_head %}
 <style>
-  .stat-card {
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  .dash-card {
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
   }
-  .stat-card:hover {
+  .dash-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 16px 40px rgba(99,102,241,0.10);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
   }
-
-  .course-card {
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-  }
-  .course-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.07);
-  }
-
-  .submission-row {
-    transition: background 0.2s ease;
-  }
-  .submission-row:hover { background: #f8f7ff; }
-
-  .reveal {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-  }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
-
-  /* Mini bar chart */
-  .bar-item {
-    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  /* Status badge */
-  .badge-graded    { background:#f0fdf4; color:#16a34a; }
-  .badge-pending   { background:#fffbeb; color:#d97706; }
-  .badge-late      { background:#fef2f2; color:#dc2626; }
-
-  /* Action btn */
-  .action-btn {
-    transition: all 0.2s ease;
-  }
-  .action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99,102,241,0.2);
+  .hero-orb {
+    position: absolute;
+    border-radius: 9999px;
+    opacity: 0.45;
+    filter: blur(2px);
   }
 </style>
 {% endblock %}
 
 {% block content %}
-
-<!-- ═══════════════════════════════════════
-     WELCOME BANNER
-════════════════════════════════════════ -->
-<div class="bg-gradient-to-br from-primary-700 via-primary-600 to-indigo-500 rounded-2xl p-6 mb-6 relative overflow-hidden reveal">
-  <div class="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full"></div>
-  <div class="absolute right-16 bottom-0 w-20 h-20 bg-white/5 rounded-full"></div>
-  <div class="absolute right-4 top-1/2 -translate-y-1/2 hidden md:block">
-    <i class="ri-user-star-line text-white/20 text-8xl"></i>
-  </div>
-  <div class="relative z-10">
-    <p class="text-primary-200 text-sm font-medium mb-1" id="greeting-time">Good morning,</p>
-    <h1 class="text-white font-bold text-2xl mb-1">Prof. Pomona Sprout</h1>
-    <p class="text-primary-200 text-sm">You have <span class="text-white font-semibold">3 pending submissions</span> to review today.</p>
-    <div class="flex flex-wrap gap-3 mt-4">
-      <a href="{% url 'instructor_create_course' %}"
-         class="action-btn inline-flex items-center gap-2 bg-white text-primary-700 font-semibold text-sm px-4 py-2 rounded-xl shadow">
+<div class="max-w-6xl mx-auto space-y-5">
+  <section class="relative overflow-hidden rounded-3xl border border-slate-100 bg-gradient-to-br from-cyan-100 via-indigo-100 to-fuchsia-100 p-6">
+    <span class="hero-orb w-32 h-32 bg-cyan-300 top-0 -left-8"></span>
+    <span class="hero-orb w-40 h-40 bg-fuchsia-300 bottom-0 right-8"></span>
+    <div class="relative flex items-end justify-between gap-4 flex-wrap">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] font-semibold text-indigo-700">Instructor Hub</p>
+        <h2 class="text-2xl font-bold text-slate-800 mt-1">Teach With Clarity And Speed</h2>
+        <p class="text-sm text-slate-600 mt-1">Manage course delivery, review submissions, and keep learners moving.</p>
+      </div>
+      <a href="{% url 'instructor_create_course' %}" class="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-white/80 border border-white text-slate-700 hover:bg-white transition">
         <i class="ri-add-circle-line"></i> New Course
       </a>
-      <a href="{% url 'instructor_submissions' %}"
-         class="action-btn inline-flex items-center gap-2 bg-white/15 border border-white/20 text-white font-medium text-sm px-4 py-2 rounded-xl">
-        <i class="ri-file-check-line"></i> Review Submissions
-      </a>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="dash-card rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
+      <p class="text-xs text-indigo-700 font-semibold">Courses</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.courses }}</p>
+    </div>
+    <div class="dash-card rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-lime-100 p-4">
+      <p class="text-xs text-emerald-700 font-semibold">Students</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.students }}</p>
+    </div>
+    <div class="dash-card rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 p-4">
+      <p class="text-xs text-amber-700 font-semibold">Pending Submissions</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.pending_submissions }}</p>
+    </div>
+    <div class="dash-card rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-100 p-4">
+      <p class="text-xs text-violet-700 font-semibold">Average Student Completion</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.completion }}%</p>
     </div>
   </div>
-</div>
 
-
-<!-- ═══════════════════════════════════════
-     STAT CARDS
-════════════════════════════════════════ -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 reveal">
-
-  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
-      <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center">
-        <i class="ri-book-open-line text-primary-600 text-lg"></i>
+  <div class="grid lg:grid-cols-2 gap-5">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-semibold text-slate-800">My Courses</h3>
+        <a href="{% url 'instructor_create_course' %}" class="text-sm font-semibold text-indigo-600">Create</a>
       </div>
-      <span class="text-xs font-semibold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-full">Active</span>
-    </div>
-    <p class="text-2xl font-bold text-slate-800 mb-0.5">4</p>
-    <p class="text-xs text-slate-500">My courses</p>
-  </div>
-
-  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
-      <div class="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
-        <i class="ri-group-line text-violet-600 text-lg"></i>
-      </div>
-      <span class="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">+12 this week</span>
-    </div>
-    <p class="text-2xl font-bold text-slate-800 mb-0.5">284</p>
-    <p class="text-xs text-slate-500">Total students</p>
-  </div>
-
-  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
-      <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
-        <i class="ri-file-list-3-line text-amber-500 text-lg"></i>
-      </div>
-      <span class="text-xs font-semibold text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">Needs review</span>
-    </div>
-    <p class="text-2xl font-bold text-slate-800 mb-0.5">3</p>
-    <p class="text-xs text-slate-500">Pending submissions</p>
-  </div>
-
-  <div class="stat-card bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-    <div class="flex items-center justify-between mb-3">
-      <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-        <i class="ri-bar-chart-line text-emerald-600 text-lg"></i>
-      </div>
-      <span class="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">↑ 4%</span>
-    </div>
-    <p class="text-2xl font-bold text-slate-800 mb-0.5">78%</p>
-    <p class="text-xs text-slate-500">Avg. completion rate</p>
-  </div>
-
-</div>
-
-
-<!-- ═══════════════════════════════════════
-     MAIN GRID
-════════════════════════════════════════ -->
-<div class="grid lg:grid-cols-3 gap-6">
-
-  <!-- ───── LEFT (2/3) ───── -->
-  <div class="lg:col-span-2 space-y-6">
-
-    <!-- MY COURSES -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-semibold text-slate-800 text-base">My Courses</h2>
-        <a href="{% url 'instructor_create_course' %}"
-           class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-primary-500 hover:bg-primary-600 transition px-3 py-1.5 rounded-lg">
-          <i class="ri-add-line"></i> New course
+      <div class="divide-y divide-slate-100">
+        {% for course in instructor_courses %}
+        <a href="{% url 'instructor_manage_content' course.id %}" class="block px-5 py-4 hover:bg-indigo-50 transition">
+          <p class="font-medium text-slate-800">{{ course.title }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ course.category|default:'General' }} | {{ course.level }} | {{ course.approved_enrollment_count }} students</p>
         </a>
-      </div>
-
-      <div class="space-y-3">
-
-        <!-- Course 1 -->
-        <div class="course-card flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer"
-             onclick="window.location='{% url 'instructor_manage_content' 1 %}'">
-          <div class="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <i class="ri-code-s-slash-line text-indigo-600 text-xl"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-0.5">
-              <p class="text-sm font-semibold text-slate-800 truncate">Algorithms 101</p>
-              <span class="text-xs bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded-full flex-shrink-0">Published</span>
-            </div>
-            <p class="text-xs text-slate-400 mb-2">84 students enrolled · 14 weeks</p>
-            <div class="flex items-center gap-2">
-              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full bg-indigo-400 rounded-full" style="width:42%"></div>
-              </div>
-              <span class="text-xs text-slate-500 font-medium flex-shrink-0">42% avg. completion</span>
-            </div>
-          </div>
-          <div class="flex flex-col items-end gap-2 flex-shrink-0">
-            <span class="text-xs text-amber-500 font-semibold bg-amber-50 px-2 py-0.5 rounded-full">2 pending</span>
-            <i class="ri-arrow-right-s-line text-slate-300"></i>
-          </div>
-        </div>
-
-        <!-- Course 2 -->
-        <div class="course-card flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer"
-             onclick="window.location='{% url 'instructor_manage_content' 2 %}'">
-          <div class="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
-            <i class="ri-database-2-line text-violet-600 text-xl"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-0.5">
-              <p class="text-sm font-semibold text-slate-800 truncate">Introduction to Database</p>
-              <span class="text-xs bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded-full flex-shrink-0">Published</span>
-            </div>
-            <p class="text-xs text-slate-400 mb-2">96 students enrolled · 14 weeks</p>
-            <div class="flex items-center gap-2">
-              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full bg-violet-400 rounded-full" style="width:58%"></div>
-              </div>
-              <span class="text-xs text-slate-500 font-medium flex-shrink-0">58% avg. completion</span>
-            </div>
-          </div>
-          <div class="flex flex-col items-end gap-2 flex-shrink-0">
-            <span class="text-xs text-amber-500 font-semibold bg-amber-50 px-2 py-0.5 rounded-full">1 pending</span>
-            <i class="ri-arrow-right-s-line text-slate-300"></i>
-          </div>
-        </div>
-
-        <!-- Course 3 -->
-        <div class="course-card flex items-center gap-4 p-4 rounded-xl border border-slate-100 bg-white hover:border-primary-100 cursor-pointer"
-             onclick="window.location='{% url 'instructor_manage_content' 3 %}'">
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <i class="ri-pie-chart-line text-emerald-600 text-xl"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-0.5">
-              <p class="text-sm font-semibold text-slate-800 truncate">Basic Mathematics</p>
-              <span class="text-xs bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded-full flex-shrink-0">Published</span>
-            </div>
-            <p class="text-xs text-slate-400 mb-2">62 students enrolled · 12 weeks</p>
-            <div class="flex items-center gap-2">
-              <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full bg-emerald-400 rounded-full" style="width:81%"></div>
-              </div>
-              <span class="text-xs text-slate-500 font-medium flex-shrink-0">81% avg. completion</span>
-            </div>
-          </div>
-          <div class="flex flex-col items-end gap-2 flex-shrink-0">
-            <span class="text-xs text-emerald-500 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">All graded</span>
-            <i class="ri-arrow-right-s-line text-slate-300"></i>
-          </div>
-        </div>
-
-        <!-- Course 4: Draft -->
-        <div class="course-card flex items-center gap-4 p-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 cursor-pointer"
-             onclick="window.location='{% url 'instructor_manage_content' 4 %}'">
-          <div class="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-            <i class="ri-computer-line text-slate-400 text-xl"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-0.5">
-              <p class="text-sm font-semibold text-slate-600 truncate">Human Computer Interaction</p>
-              <span class="text-xs bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full flex-shrink-0">Draft</span>
-            </div>
-            <p class="text-xs text-slate-400">Not published yet · 0 students</p>
-          </div>
-          <div class="flex flex-col items-end gap-2 flex-shrink-0">
-            <span class="text-xs text-primary-500 font-semibold">Edit draft</span>
-            <i class="ri-arrow-right-s-line text-slate-300"></i>
-          </div>
-        </div>
-
+        {% empty %}
+        <div class="px-5 py-8 text-center text-slate-500 text-sm">No courses yet.</div>
+        {% endfor %}
       </div>
     </div>
 
-    <!-- PENDING SUBMISSIONS TABLE -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-semibold text-slate-800">Pending Reviews</h3>
+        <a href="{% url 'instructor_submissions' %}" class="text-sm font-semibold text-indigo-600">Open grading</a>
+      </div>
+      <div class="divide-y divide-slate-100">
+        {% for submission in pending_submission_list %}
+        <div class="px-5 py-4 hover:bg-amber-50 transition">
+          <p class="font-medium text-slate-800">{{ submission.assignment.title }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ submission.student.get_full_name|default:submission.student.username }} | {{ submission.assignment.course.title }}</p>
+        </div>
+        {% empty %}
+        <div class="px-5 py-8 text-center text-slate-500 text-sm">No pending submissions.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-5">
+    <section class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="font-semibold text-slate-800 text-base">Pending Submissions</h2>
-        <a href="{% url 'instructor_submissions' %}"
-           class="text-xs text-primary-500 font-medium hover:text-primary-600 flex items-center gap-1 transition">
-          View all <i class="ri-arrow-right-line"></i>
-        </a>
+        <h3 class="font-semibold text-slate-800">Top Students In Your Courses</h3>
+        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Ranked by performance</span>
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="text-xs text-slate-400 font-semibold uppercase tracking-wide border-b border-slate-100">
-              <th class="text-left pb-3 pr-4">Student</th>
-              <th class="text-left pb-3 pr-4">Assignment</th>
-              <th class="text-left pb-3 pr-4">Course</th>
-              <th class="text-left pb-3 pr-4">Submitted</th>
-              <th class="text-left pb-3">Status</th>
-              <th class="text-right pb-3">Action</th>
+            <tr class="text-xs uppercase tracking-wide text-slate-500 border-b border-slate-100">
+              <th class="text-left py-2 pr-3">Student</th>
+              <th class="text-left py-2 pr-3">Courses</th>
+              <th class="text-left py-2 pr-3">Progress</th>
+              <th class="text-left py-2 pr-3">Assignment</th>
+              <th class="text-left py-2 pr-3">Quiz</th>
+              <th class="text-left py-2">Overall</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-50">
-
-            <tr class="submission-row rounded-xl">
-              <td class="py-3 pr-4">
-                <div class="flex items-center gap-2.5">
-                  <img src="https://ui-avatars.com/api/?name=H+G&background=818cf8&color=fff&size=32" class="w-7 h-7 rounded-full flex-shrink-0"/>
-                  <div>
-                    <p class="font-medium text-slate-700 text-xs">Hermione Granger</p>
-                    <p class="text-slate-400 text-xs">2100639</p>
-                  </div>
-                </div>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in top_students %}
+            <tr class="hover:bg-indigo-50/70 transition">
+              <td class="py-3 pr-3">
+                <p class="font-semibold text-slate-800">{{ row.name }}</p>
+                <p class="text-xs text-slate-500">@{{ row.username }}</p>
               </td>
-              <td class="py-3 pr-4">
-                <p class="text-xs font-medium text-slate-700 leading-snug max-w-[140px] truncate">Week 5 — Sorting Algorithms</p>
-              </td>
-              <td class="py-3 pr-4">
-                <span class="text-xs text-indigo-600 bg-indigo-50 font-medium px-2 py-0.5 rounded-full">Algorithms 101</span>
-              </td>
-              <td class="py-3 pr-4">
-                <p class="text-xs text-slate-500">2 hours ago</p>
-              </td>
-              <td class="py-3 pr-4">
-                <span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span>
-              </td>
-              <td class="py-3 text-right">
-                <a href="{% url 'instructor_submissions' %}" class="text-xs font-semibold text-primary-600 hover:text-primary-700 transition">Grade</a>
+              <td class="py-3 pr-3 text-slate-700">{{ row.course_count }}</td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.avg_progress }}%</td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.assignment_avg }}%</td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.quiz_avg }}%</td>
+              <td class="py-3">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">{{ row.overall_score }}%</span>
               </td>
             </tr>
-
-            <tr class="submission-row">
-              <td class="py-3 pr-4">
-                <div class="flex items-center gap-2.5">
-                  <img src="https://ui-avatars.com/api/?name=R+W&background=4f46e5&color=fff&size=32" class="w-7 h-7 rounded-full flex-shrink-0"/>
-                  <div>
-                    <p class="font-medium text-slate-700 text-xs">Ron Weasley</p>
-                    <p class="text-slate-400 text-xs">2100640</p>
-                  </div>
-                </div>
-              </td>
-              <td class="py-3 pr-4">
-                <p class="text-xs font-medium text-slate-700 leading-snug max-w-[140px] truncate">Week 5 — Normalization</p>
-              </td>
-              <td class="py-3 pr-4">
-                <span class="text-xs text-violet-600 bg-violet-50 font-medium px-2 py-0.5 rounded-full">Database</span>
-              </td>
-              <td class="py-3 pr-4">
-                <p class="text-xs text-slate-500">5 hours ago</p>
-              </td>
-              <td class="py-3 pr-4">
-                <span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span>
-              </td>
-              <td class="py-3 text-right">
-                <a href="{% url 'instructor_submissions' %}" class="text-xs font-semibold text-primary-600 hover:text-primary-700 transition">Grade</a>
-              </td>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="py-6 text-center text-slate-500">No student performance data available yet.</td>
             </tr>
-
-            <tr class="submission-row">
-              <td class="py-3 pr-4">
-                <div class="flex items-center gap-2.5">
-                  <img src="https://ui-avatars.com/api/?name=H+P&background=10b981&color=fff&size=32" class="w-7 h-7 rounded-full flex-shrink-0"/>
-                  <div>
-                    <p class="font-medium text-slate-700 text-xs">Harry Potter</p>
-                    <p class="text-slate-400 text-xs">2100641</p>
-                  </div>
-                </div>
-              </td>
-              <td class="py-3 pr-4">
-                <p class="text-xs font-medium text-slate-700 leading-snug max-w-[140px] truncate">Week 4 — Recursion Quiz</p>
-              </td>
-              <td class="py-3 pr-4">
-                <span class="text-xs text-indigo-600 bg-indigo-50 font-medium px-2 py-0.5 rounded-full">Algorithms 101</span>
-              </td>
-              <td class="py-3 pr-4">
-                <p class="text-xs text-red-400">2 days ago</p>
-              </td>
-              <td class="py-3 pr-4">
-                <span class="badge-late text-xs font-semibold px-2 py-0.5 rounded-full">Late</span>
-              </td>
-              <td class="py-3 text-right">
-                <a href="{% url 'instructor_submissions' %}" class="text-xs font-semibold text-primary-600 hover:text-primary-700 transition">Grade</a>
-              </td>
-            </tr>
-
+            {% endfor %}
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
 
+    <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-slate-800">Student Opinions</h3>
+        <i class="ri-chat-quote-line text-pink-500"></i>
+      </div>
+      <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+        {% for opinion in student_opinions %}
+        <div class="rounded-xl border border-pink-100 bg-gradient-to-r from-pink-50 to-rose-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-semibold text-slate-800">{{ opinion.student_name }}</p>
+            <span class="text-xs text-slate-500">{{ opinion.updated_at|date:"M d" }}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">{{ opinion.course_title }}</p>
+          <p class="text-sm text-slate-700 mt-2">{{ opinion.comment|truncatechars:120 }}</p>
+          <p class="text-xs text-amber-700 mt-2">
+            <i class="ri-star-fill mr-1"></i>Course {{ opinion.course_rating }}/5 · Instructor {{ opinion.instructor_rating }}/5
+          </p>
+        </div>
+        {% empty %}
+        <p class="text-sm text-slate-500">No written student opinions yet.</p>
+        {% endfor %}
+      </div>
+    </section>
   </div>
 
-  <!-- ───── RIGHT (1/3) ───── -->
-  <div class="space-y-6">
-
-    <!-- WEEKLY SUBMISSION CHART -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-      <div class="flex items-center justify-between mb-1">
-        <h2 class="font-semibold text-slate-800 text-base">Submissions This Week</h2>
-      </div>
-      <p class="text-xs text-slate-400 mb-4">Total received across all courses</p>
-
-      <!-- Mini bar chart -->
-      <div class="flex items-end justify-between gap-1.5 h-24 mb-2" id="bar-chart">
-        <div class="flex flex-col items-center gap-1 flex-1">
-          <span class="text-xs text-slate-500 font-medium">8</span>
-          <div class="bar-item w-full bg-primary-200 rounded-t-md" style="height:55%"></div>
-          <span class="text-xs text-slate-400">Mon</span>
-        </div>
-        <div class="flex flex-col items-center gap-1 flex-1">
-          <span class="text-xs text-slate-500 font-medium">14</span>
-          <div class="bar-item w-full bg-primary-300 rounded-t-md" style="height:80%"></div>
-          <span class="text-xs text-slate-400">Tue</span>
-        </div>
-        <div class="flex flex-col items-center gap-1 flex-1">
-          <span class="text-xs text-slate-500 font-medium">6</span>
-          <div class="bar-item w-full bg-primary-200 rounded-t-md" style="height:40%"></div>
-          <span class="text-xs text-slate-400">Wed</span>
-        </div>
-        <div class="flex flex-col items-center gap-1 flex-1">
-          <span class="text-xs text-slate-500 font-medium">18</span>
-          <div class="bar-item w-full bg-primary-500 rounded-t-md" style="height:100%"></div>
-          <span class="text-xs text-slate-400">Thu</span>
-        </div>
-        <div class="flex flex-col items-center gap-1 flex-1">
-          <span class="text-xs text-primary-600 font-semibold">3</span>
-          <div class="bar-item w-full bg-primary-100 rounded-t-md border-2 border-dashed border-primary-300" style="height:20%"></div>
-          <span class="text-xs text-primary-500 font-medium">Today</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-1.5 mt-2">
-        <span class="w-2.5 h-2.5 rounded-sm bg-primary-500 flex-shrink-0"></span>
-        <span class="text-xs text-slate-400">49 total submissions this week</span>
-      </div>
+  <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-slate-800">Courses By Other Teachers</h3>
+      <a href="{% url 'courses' %}" class="text-sm font-semibold text-indigo-600">Browse all</a>
     </div>
-
-    <!-- STUDENT ENROLLMENT BREAKDOWN -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-      <h2 class="font-semibold text-slate-800 text-base mb-4">Students per Course</h2>
-      <div class="space-y-3">
-
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-slate-700">Algorithms 101</span>
-            <span class="text-xs font-semibold text-indigo-600">84</span>
-          </div>
-          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full bg-indigo-400 rounded-full" style="width:84%"></div>
-          </div>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {% for course in other_courses %}
+      <a href="{% url 'course_detail' course.id %}" class="dash-card rounded-xl border border-slate-100 bg-gradient-to-br {% cycle 'from-orange-50 to-amber-100' 'from-cyan-50 to-sky-100' 'from-violet-50 to-fuchsia-100' 'from-emerald-50 to-lime-100' 'from-rose-50 to-pink-100' 'from-indigo-50 to-blue-100' %} p-4">
+        <p class="font-semibold text-slate-800 line-clamp-2">{{ course.title }}</p>
+        <p class="text-xs text-slate-600 mt-1">{{ course.instructor }}</p>
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-600">
+          <span>{{ course.category }} · {{ course.level }}</span>
+          <span><i class="ri-star-fill mr-1 text-amber-500"></i>{{ course.course_rating|floatformat:1 }}</span>
         </div>
-
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-slate-700">Introduction to Database</span>
-            <span class="text-xs font-semibold text-violet-600">96</span>
-          </div>
-          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full bg-violet-400 rounded-full" style="width:96%"></div>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-slate-700">Basic Mathematics</span>
-            <span class="text-xs font-semibold text-emerald-600">62</span>
-          </div>
-          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full bg-emerald-400 rounded-full" style="width:62%"></div>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-slate-400">HCI (Draft)</span>
-            <span class="text-xs font-semibold text-slate-400">0</span>
-          </div>
-          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div class="h-full bg-slate-200 rounded-full" style="width:0%"></div>
-          </div>
-        </div>
-
-      </div>
+        <p class="text-xs text-slate-500 mt-1"><i class="ri-group-line mr-1"></i>{{ course.enrollment_count }} students</p>
+      </a>
+      {% empty %}
+      <p class="text-sm text-slate-500 sm:col-span-2 xl:col-span-3">No other instructor courses found.</p>
+      {% endfor %}
     </div>
-
-    <!-- RECENT ACTIVITY -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-      <h2 class="font-semibold text-slate-800 text-base mb-4">Recent Activity</h2>
-
-      <div class="space-y-0 relative">
-        <div class="absolute left-[15px] top-4 bottom-4 w-px bg-slate-100"></div>
-
-        <div class="flex gap-3 pb-4 relative">
-          <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 z-10">
-            <i class="ri-file-upload-line text-amber-500 text-sm"></i>
-          </div>
-          <div class="flex-1 pt-1">
-            <p class="text-xs font-medium text-slate-700 leading-snug">New submission from <span class="text-primary-600">Hermione Granger</span></p>
-            <p class="text-xs text-slate-400 mt-0.5">Algorithms 101 · 2 hours ago</p>
-          </div>
-        </div>
-
-        <div class="flex gap-3 pb-4 relative">
-          <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 z-10">
-            <i class="ri-user-add-line text-primary-500 text-sm"></i>
-          </div>
-          <div class="flex-1 pt-1">
-            <p class="text-xs font-medium text-slate-700 leading-snug"><span class="text-primary-600">12 new students</span> enrolled this week</p>
-            <p class="text-xs text-slate-400 mt-0.5">Across all courses · 1 day ago</p>
-          </div>
-        </div>
-
-        <div class="flex gap-3 pb-4 relative">
-          <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 z-10">
-            <i class="ri-checkbox-circle-line text-emerald-500 text-sm"></i>
-          </div>
-          <div class="flex-1 pt-1">
-            <p class="text-xs font-medium text-slate-700 leading-snug">You graded <span class="text-emerald-600">8 submissions</span> yesterday</p>
-            <p class="text-xs text-slate-400 mt-0.5">Database · 1 day ago</p>
-          </div>
-        </div>
-
-        <div class="flex gap-3 relative">
-          <div class="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 z-10">
-            <i class="ri-add-circle-line text-violet-500 text-sm"></i>
-          </div>
-          <div class="flex-1 pt-1">
-            <p class="text-xs font-medium text-slate-700 leading-snug">New lecture added to <span class="text-violet-600">Algorithms 101</span></p>
-            <p class="text-xs text-slate-400 mt-0.5">Week 5 content · 2 days ago</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- QUICK ACTIONS -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
-      <h2 class="font-semibold text-slate-800 text-base mb-4">Quick Actions</h2>
-      <div class="grid grid-cols-2 gap-2.5">
-
-        <a href="{% url 'instructor_create_course' %}"
-           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-primary-50 hover:bg-primary-100 transition text-center cursor-pointer">
-          <i class="ri-add-circle-line text-primary-600 text-xl"></i>
-          <span class="text-xs font-medium text-primary-700">New Course</span>
-        </a>
-
-        <a href="{% url 'instructor_submissions' %}"
-           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition text-center cursor-pointer">
-          <i class="ri-file-check-line text-amber-500 text-xl"></i>
-          <span class="text-xs font-medium text-amber-700">Grade Work</span>
-        </a>
-
-        <a href="{% url 'announcements' %}"
-           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 transition text-center cursor-pointer">
-          <i class="ri-megaphone-line text-violet-600 text-xl"></i>
-          <span class="text-xs font-medium text-violet-700">Announce</span>
-        </a>
-
-        <a href="{% url 'quiz' %}"
-           class="flex flex-col items-center gap-2 p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition text-center cursor-pointer">
-          <i class="ri-questionnaire-line text-emerald-600 text-xl"></i>
-          <span class="text-xs font-medium text-emerald-700">Add Quiz</span>
-        </a>
-
-      </div>
-    </div>
-
-  </div>
-  <!-- end right col -->
-
+  </section>
 </div>
-
-{% endblock %}
-
-
-{% block extra_scripts %}
-<script>
-  // Greeting by time of day
-  const hour = new Date().getHours();
-  const greetEl = document.getElementById('greeting-time');
-  if (greetEl) {
-    if (hour < 12)      greetEl.textContent = 'Good morning,';
-    else if (hour < 17) greetEl.textContent = 'Good afternoon,';
-    else                greetEl.textContent = 'Good evening,';
-  }
-
-  // Scroll reveal
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => entry.target.classList.add('visible'), i * 80);
-      }
-    });
-  }, { threshold: 0.05 });
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-</script>
 {% endblock %}

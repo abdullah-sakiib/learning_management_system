@@ -59,11 +59,11 @@
 
     /* Hero background mesh */
     .hero-bg {
-      background-color: #f8f7ff;
+      background-color: #f8faff;
       background-image:
-        radial-gradient(ellipse 80% 60% at 60% -10%, rgba(99,102,241,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 100% 80%, rgba(139,92,246,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 30% at 0% 60%, rgba(79,70,229,0.06) 0%, transparent 50%);
+        radial-gradient(ellipse 80% 60% at 60% -10%, rgba(99,102,241,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 100% 80%, rgba(56,189,248,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 0% 60%, rgba(217,70,239,0.08) 0%, transparent 50%);
     }
 
     /* Dot grid pattern */
@@ -92,7 +92,7 @@
     #navbar.scrolled {
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(10px);
-      box-shadow: 0 1px 20px rgba(99,102,241,0.08);
+      box-shadow: 0 1px 20px rgba(79,70,229,0.12);
     }
 
     /* Stat card hover */
@@ -140,7 +140,7 @@
     /* CTA gradient button */
     .btn-primary {
       background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-      box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+      box-shadow: 0 10px 26px rgba(79,70,229,0.34);
       transition: all 0.3s ease;
     }
     .btn-primary:hover {
@@ -535,7 +535,7 @@
       <div class="grid md:grid-cols-3 gap-6">
 
         <!-- Course Card 1 -->
-        <div class="course-card bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm reveal">
+        <div class="course-card bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm reveal cursor-pointer" onclick="window.location='{% url 'courses' %}'">
           <div class="h-36 bg-gradient-to-br from-indigo-500 to-indigo-700 relative p-5 flex flex-col justify-end">
             <div class="absolute top-4 right-4 bg-white/20 backdrop-blur-sm rounded-lg px-2.5 py-1">
               <span class="text-white text-xs font-semibold">CS</span>

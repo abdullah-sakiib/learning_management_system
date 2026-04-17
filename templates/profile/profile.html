@@ -4,10 +4,10 @@
 {% block page_title %}My Profile{% endblock %}
 {% block page_subtitle %}Manage your account details{% endblock %}
 {% block nav_profile %}active{% endblock %}
-{% block user_name %}John Doe{% endblock %}
-{% block user_role %}Student{% endblock %}
-{% block topbar_user %}John Doe{% endblock %}
-{% block topbar_role %}Student{% endblock %}
+{% block user_name %}{{ display_name }}{% endblock %}
+{% block user_role %}{{ current_user_role|title }}{% endblock %}
+{% block topbar_user %}{{ display_name }}{% endblock %}
+{% block topbar_role %}{{ current_user_role|title }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -51,6 +51,11 @@
     transition: transform 0.25s ease;
   }
   .profile-stat:hover { transform: translateY(-2px); }
+
+  .profile-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+    border-color: #e0e7ff;
+  }
 </style>
 {% endblock %}
 
@@ -61,7 +66,7 @@
   <!-- ══════════════════════════════════
        PROFILE HEADER CARD
   ══════════════════════════════════ -->
-  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6 reveal">
+  <div class="profile-card rounded-2xl border shadow-sm overflow-hidden mb-6 reveal">
 
     <!-- Cover banner -->
     <div class="h-28 bg-gradient-to-br from-primary-600 via-primary-500 to-indigo-400 relative">
@@ -75,12 +80,12 @@
         <!-- Avatar -->
         <div class="avatar-wrap relative w-20 h-20 flex-shrink-0 cursor-pointer" onclick="document.getElementById('avatar-input').click()">
           <img id="avatar-preview"
-               src="https://ui-avatars.com/api/?name=John+Doe&background=4f46e5&color=fff&size=128"
+               src="{% if profile_obj.avatar %}{{ profile_obj.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ display_name|urlencode }}&background=4f46e5&color=fff&size=128{% endif %}"
                class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md"/>
           <div class="avatar-overlay absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center">
             <i class="ri-camera-line text-white text-xl"></i>
           </div>
-          <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="previewAvatar(this)"/>
+          <input type="file" id="avatar-input" name="avatar" form="profile-general-form" accept="image/*" class="hidden" onchange="previewAvatar(this)"/>
         </div>
 
         <!-- Action buttons -->
@@ -99,35 +104,52 @@
       <!-- Name & role -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 class="text-xl font-bold text-slate-800">John Doe</h1>
+          <h1 class="text-xl font-bold text-slate-800">{{ display_name }}</h1>
           <div class="flex items-center gap-2 mt-1">
-            <span class="text-xs bg-primary-50 text-primary-600 font-semibold px-2.5 py-0.5 rounded-full">Student</span>
-            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-map-pin-line"></i> Chittagong, BD</span>
-            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-calendar-line"></i> Joined Jan 2026</span>
+            <span class="text-xs bg-primary-50 text-primary-600 font-semibold px-2.5 py-0.5 rounded-full">{{ current_user_role|title }}</span>
+            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-map-pin-line"></i> {% if profile_obj.city or profile_obj.country %}{{ profile_obj.city|default:"Unknown city" }}{% if profile_obj.country %}, {{ profile_obj.country }}{% endif %}{% else %}Location not set{% endif %}</span>
+            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-calendar-line"></i> Joined {{ request.user.date_joined|date:"M Y" }}</span>
           </div>
         </div>
 
         <!-- Quick stats -->
         <div class="flex items-center gap-4">
+          {% if is_student %}
           <div class="profile-stat text-center">
-            <p class="text-lg font-bold text-slate-800">6</p>
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.course_count }}</p>
             <p class="text-xs text-slate-400">Courses</p>
           </div>
           <div class="w-px h-8 bg-slate-100"></div>
           <div class="profile-stat text-center">
-            <p class="text-lg font-bold text-slate-800">3.8</p>
-            <p class="text-xs text-slate-400">GPA</p>
-          </div>
-          <div class="w-px h-8 bg-slate-100"></div>
-          <div class="profile-stat text-center">
-            <p class="text-lg font-bold text-slate-800">14</p>
-            <p class="text-xs text-slate-400">Submitted</p>
-          </div>
-          <div class="w-px h-8 bg-slate-100"></div>
-          <div class="profile-stat text-center">
-            <p class="text-lg font-bold text-slate-800">92%</p>
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.avg_grade|floatformat:1 }}%</p>
             <p class="text-xs text-slate-400">Avg. grade</p>
           </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.submitted }}</p>
+            <p class="text-xs text-slate-400">Submitted</p>
+          </div>
+          {% else %}
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.total_courses }}</p>
+            <p class="text-xs text-slate-400">Courses Provided</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.total_students }}</p>
+            <p class="text-xs text-slate-400">Students</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.avg_rating|floatformat:1 }}</p>
+            <p class="text-xs text-slate-400">Avg. Rating</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.rated_courses }}</p>
+            <p class="text-xs text-slate-400">Reviewed Courses</p>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -137,7 +159,7 @@
   <!-- ══════════════════════════════════
        TAB NAV
   ══════════════════════════════════ -->
-  <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mb-6 w-fit reveal">
+  <div class="flex items-center gap-1 bg-gradient-to-r from-indigo-50 to-cyan-50 border border-indigo-100 rounded-xl p-1 mb-6 w-fit reveal">
     <button onclick="showTab('general')" id="tab-general"
       class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
       <i class="ri-user-line mr-1.5"></i>General
@@ -160,11 +182,11 @@
 
       <!-- ── TAB: GENERAL ── -->
       <div id="panel-general" class="reveal">
-        <form method="POST" action="{% url 'profile' %}" enctype="multipart/form-data">
+        <form method="POST" action="{% url 'profile' %}" enctype="multipart/form-data" id="profile-general-form">
           {% csrf_token %}
           <input type="hidden" name="form_type" value="general"/>
 
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
+          <div class="profile-card rounded-2xl border shadow-sm p-6 mb-4">
             <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
               <i class="ri-user-line text-primary-500"></i> Personal Information
             </h2>
@@ -172,12 +194,12 @@
             <div class="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">First Name</label>
-                <input type="text" name="first_name" value="John"
+                <input type="text" name="first_name" value="{{ request.user.first_name }}"
                   class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Last Name</label>
-                <input type="text" name="last_name" value="Doe"
+                <input type="text" name="last_name" value="{{ request.user.last_name }}"
                   class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
             </div>
@@ -186,7 +208,7 @@
               <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Email Address</label>
               <div class="relative">
                 <i class="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
-                <input type="email" name="email" value="john.doe@university.edu"
+                <input type="email" name="email" value="{{ request.user.email }}"
                   class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
             </div>
@@ -195,7 +217,7 @@
               <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Phone Number</label>
               <div class="relative">
                 <i class="ri-phone-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
-                <input type="tel" name="phone" value="+880 1XXXXXXXXX" placeholder="+880 XXXXXXXXXX"
+                <input type="tel" name="phone" value="{{ profile_obj.phone }}" placeholder="+880 XXXXXXXXXX"
                   class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
             </div>
@@ -203,12 +225,12 @@
             <div class="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">City</label>
-                <input type="text" name="city" value="Chittagong"
+                <input type="text" name="city" value="{{ profile_obj.city }}"
                   class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Country</label>
-                <input type="text" name="country" value="Bangladesh"
+                <input type="text" name="country" value="{{ profile_obj.country }}"
                   class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
             </div>
@@ -216,7 +238,7 @@
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Bio</label>
               <textarea name="bio" rows="3" placeholder="Tell us a little about yourself..."
-                class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all resize-none">Computer Science student passionate about algorithms and databases.</textarea>
+                class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all resize-none">{{ profile_obj.bio }}</textarea>
               <p class="text-xs text-slate-400 mt-1">Max 200 characters</p>
             </div>
           </div>
@@ -240,25 +262,39 @@
           {% csrf_token %}
           <input type="hidden" name="form_type" value="academic"/>
 
-          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
+          <div class="profile-card rounded-2xl border shadow-sm p-6 mb-4">
             <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
               <i class="ri-graduation-cap-line text-primary-500"></i> Academic Information
             </h2>
 
             <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              {% if is_student %}
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Student ID</label>
-                <input type="text" value="2100639" readonly
+                <input type="text" value="STU-{{ request.user.id|stringformat:'05d' }}" readonly
                   class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Department</label>
-                <input type="text" name="department" value="Computer Science &amp; Engineering"
+                <input type="text" name="department" value="{{ profile_obj.department }}"
                   class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
               </div>
+              {% else %}
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Teacher ID</label>
+                <input type="text" value="{{ default_teacher_id }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Working University</label>
+                <input type="text" name="university" value="{{ profile_obj.university }}" placeholder="University / Institution"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              {% endif %}
             </div>
 
             <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              {% if is_student %}
               <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Year / Semester</label>
                 <select name="year"
@@ -274,43 +310,71 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Current GPA</label>
-                <input type="text" value="3.8 / 4.0" readonly
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Average Grade</label>
+                <input type="text" value="{{ profile_stats.avg_grade|floatformat:1 }}%" readonly
                   class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
               </div>
+              {% else %}
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Total Courses</label>
+                <input type="text" value="{{ instructor_summary.total_courses }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Total Students</label>
+                <input type="text" value="{{ instructor_summary.total_students }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Designation</label>
+                <input type="text" name="designation" value="{{ profile_obj.designation }}" placeholder="Lecturer / Assistant Professor"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              {% endif %}
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Enrolled Courses</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">{% if is_student %}Enrolled Courses{% else %}Courses You Teach{% endif %}</label>
               <div class="space-y-2">
-                {% for c in "123456" %}
+                {% if is_student %}
+                {% for c in enrolled_courses %}
                 <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center">
                       <i class="ri-book-2-line text-primary-600 text-xs"></i>
                     </div>
                     <div>
-                      <p class="text-xs font-semibold text-slate-700">
-                        {% if forloop.counter == 1 %}Algorithms 101
-                        {% elif forloop.counter == 2 %}Introduction to Database
-                        {% elif forloop.counter == 3 %}Basic Mathematics
-                        {% elif forloop.counter == 4 %}Human Computer Interaction
-                        {% elif forloop.counter == 5 %}Computer Networks
-                        {% else %}Introduction to Management{% endif %}
-                      </p>
-                      <p class="text-xs text-slate-400">
-                        {% if forloop.counter == 1 %}Prof. Sprout
-                        {% elif forloop.counter == 2 %}Prof. Snape
-                        {% elif forloop.counter == 3 %}Prof. Umbridge
-                        {% elif forloop.counter == 4 %}Prof. Flitwick
-                        {% elif forloop.counter == 5 %}Prof. McGonagall
-                        {% else %}Prof. Trelawney{% endif %}
-                      </p>
+                      <p class="text-xs font-semibold text-slate-700">{{ c.title }}</p>
+                      <p class="text-xs text-slate-400">{{ c.instructor }}</p>
                     </div>
                   </div>
-                  <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+                  {% if c.progress is not None %}
+                  <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">{{ c.progress }}% complete</span>
+                  {% else %}
+                  <span class="text-xs text-primary-600 font-semibold bg-primary-50 px-2 py-0.5 rounded-full">Instructor</span>
+                  {% endif %}
                 </div>
+                {% empty %}
+                <p class="text-sm text-slate-500">No active courses yet.</p>
                 {% endfor %}
+                {% else %}
+                {% for c in teaching_courses %}
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center">
+                      <i class="ri-book-2-line text-primary-600 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-slate-700">{{ c.title }}</p>
+                      <p class="text-xs text-slate-400">{{ c.student_count }} students</p>
+                    </div>
+                  </div>
+                  <span class="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full">{{ c.rating|floatformat:1 }} rating</span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-500">No teaching courses yet.</p>
+                {% endfor %}
+                {% endif %}
               </div>
             </div>
           </div>
@@ -339,7 +403,7 @@
               <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Current Password</label>
               <div class="relative">
                 <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="password" name="current_password" placeholder="••••••••"
+                <input type="password" id="current_password" name="current_password" placeholder="••••••••"
                   class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
                 <button type="button" onclick="togglePass('current_password','eye0')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
                   <i class="ri-eye-off-line" id="eye0"></i>
@@ -417,7 +481,7 @@
         <h3 class="font-semibold text-slate-700 text-sm mb-3">Profile Photo</h3>
         <div class="flex flex-col items-center gap-3">
           <img id="sidebar-avatar"
-               src="https://ui-avatars.com/api/?name=John+Doe&background=4f46e5&color=fff&size=128"
+               src="{% if profile_obj.avatar %}{{ profile_obj.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ display_name|urlencode }}&background=4f46e5&color=fff&size=128{% endif %}"
                class="w-20 h-20 rounded-2xl object-cover shadow"/>
           <button onclick="document.getElementById('avatar-input').click()"
             class="text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-4 py-2 rounded-xl">
@@ -433,15 +497,15 @@
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-xs text-slate-500">Role</span>
-            <span class="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">Student</span>
+            <span class="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">{{ current_user_role|title }}</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-xs text-slate-500">Member since</span>
-            <span class="text-xs font-medium text-slate-700">Jan 2026</span>
+            <span class="text-xs font-medium text-slate-700">{{ request.user.date_joined|date:"M d, Y" }}</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-xs text-slate-500">Last login</span>
-            <span class="text-xs font-medium text-slate-700">Today, 8:00 AM</span>
+            <span class="text-xs font-medium text-slate-700">{% if request.user.last_login %}{{ request.user.last_login|date:"M d, Y H:i" }}{% else %}First login{% endif %}</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-xs text-slate-500">Account status</span>
@@ -450,42 +514,54 @@
         </div>
       </div>
 
-      <!-- Grade summary -->
+      <!-- Grade summary / teaching summary -->
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        {% if is_student %}
         <h3 class="font-semibold text-slate-700 text-sm mb-3">Grade Summary</h3>
         <div class="space-y-2.5">
+          {% for item in grade_summary %}
           <div>
             <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-600">Algorithms 101</span>
-              <span class="font-semibold text-slate-700">88/100</span>
+              <span class="text-slate-600">{{ item.course }}</span>
+              <span class="font-semibold text-slate-700">{{ item.avg_percent|floatformat:1 }}/100</span>
             </div>
             <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-primary-400 rounded-full" style="width:88%"></div>
+              <div class="h-full bg-primary-400 rounded-full" style="width:{{ item.avg_percent|floatformat:0 }}%"></div>
             </div>
           </div>
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-600">Intro to Database</span>
-              <span class="font-semibold text-slate-700">92/100</span>
-            </div>
-            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-violet-400 rounded-full" style="width:92%"></div>
-            </div>
+          {% empty %}
+          <p class="text-sm text-slate-500">No graded work yet. Complete assignments or quizzes to see your summary.</p>
+          {% endfor %}
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs text-slate-500">Average Grade</span>
+          <span class="text-base font-bold text-primary-600">{{ profile_stats.avg_grade|floatformat:1 }}%</span>
+        </div>
+        {% else %}
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Teaching Summary</h3>
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Courses Provided</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.total_courses }}</span>
           </div>
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-slate-600">Basic Mathematics</span>
-              <span class="font-semibold text-slate-700">95/100</span>
-            </div>
-            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-emerald-400 rounded-full" style="width:95%"></div>
-            </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Total Students</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.total_students }}</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Average Rating</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.avg_rating|floatformat:1 }} / 5.0</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Reviewed Courses</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.rated_courses }}</span>
           </div>
         </div>
         <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs text-slate-500">Current GPA</span>
-          <span class="text-base font-bold text-primary-600">3.8 <span class="text-xs text-slate-400 font-normal">/ 4.0</span></span>
+          <span class="text-xs text-slate-500">Teacher ID</span>
+          <span class="text-sm font-bold text-primary-600">{{ default_teacher_id }}</span>
         </div>
+        {% endif %}
       </div>
 
     </div>

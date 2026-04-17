@@ -165,12 +165,56 @@
       opacity: 0;
       pointer-events: none;
     }
+
+    /* Harmonized topbar panels */
+    .topbar-panel-shell {
+      background: linear-gradient(180deg, #ffffff 0%, #f8faff 55%, #ffffff 100%);
+      border-color: #e0e7ff;
+      box-shadow: 0 18px 40px rgba(79, 70, 229, 0.14);
+    }
+    .topbar-panel-item {
+      transition: all 0.18s ease;
+    }
+    .topbar-panel-item:hover {
+      background: linear-gradient(90deg, #eef2ff 0%, #ecfeff 100%);
+    }
+
+    /* Global harmony layer for all pages extending base */
+    body.harmony-theme {
+      background: linear-gradient(180deg, #f8faff 0%, #f9fbff 45%, #f8fbff 100%);
+    }
+    body.harmony-theme main {
+      background: transparent;
+    }
+    body.harmony-theme .bg-white.rounded-2xl,
+    body.harmony-theme .bg-white.rounded-xl {
+      background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+      border-color: #e0e7ff;
+      box-shadow: 0 10px 28px rgba(79, 70, 229, 0.06);
+    }
+    body.harmony-theme .hover\:bg-slate-50:hover {
+      background: linear-gradient(90deg, #eef2ff 0%, #ecfeff 100%);
+    }
+    body.harmony-theme .bg-indigo-600 {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    }
+    body.harmony-theme .hover\:bg-indigo-700:hover {
+      background: #4338ca;
+    }
+    body.harmony-theme .text-indigo-600,
+    body.harmony-theme .text-primary-600 {
+      color: #4f46e5;
+    }
+    body.harmony-theme .border-indigo-200,
+    body.harmony-theme .border-slate-100 {
+      border-color: #e0e7ff;
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
+<body class="harmony-theme bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
 
   <!-- ═══════════════════════════════════════════
        SIDEBAR
@@ -193,8 +237,8 @@
         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white"></span>
       </div>
       <div class="overflow-hidden">
-        <p class="text-sm font-semibold text-slate-800 truncate">{% block user_name %}John Doe{% endblock %}</p>
-        <p class="text-xs text-primary-500 font-medium truncate">{% block user_role %}Student{% endblock %}</p>
+        <p class="text-sm font-semibold text-slate-800 truncate">{% block user_name %}{{ current_user_name }}{% endblock %}</p>
+        <p class="text-xs text-primary-500 font-medium truncate">{% block user_role %}{{ current_user_role|title }}{% endblock %}</p>
       </div>
     </div>
 
@@ -212,16 +256,16 @@
         <span class="nav-tooltip">Dashboard</span>
       </a>
 
-      <a href="{% url 'courses' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_courses %}{% endblock %}">
+      <a href="{% if is_student %}{% url 'student_courses' %}{% elif is_instructor %}{% url 'instructor_my_courses' %}{% else %}{% url 'courses' %}{% endif %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_courses %}{% endblock %}">
         <span class="nav-item-inner flex items-center gap-3 w-full">
           <i class="nav-icon ri-book-open-line text-xl flex-shrink-0"></i>
-          <span class="nav-label text-sm font-medium">My Courses</span>
+          <span class="nav-label text-sm font-medium">{% if is_student %}Course Catalog{% else %}My Courses{% endif %}</span>
         </span>
-        <span class="nav-tooltip">My Courses</span>
+        <span class="nav-tooltip">{% if is_student %}Course Catalog{% else %}My Courses{% endif %}</span>
       </a>
 
       {% if is_instructor or is_admin %}
-      <a href="{% url 'instructor_create_course' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group">
+      <a href="{% url 'instructor_create_course' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_create_course %}{% endblock %}">
         <span class="nav-item-inner flex items-center gap-3 w-full">
           <i class="nav-icon ri-add-circle-line text-xl flex-shrink-0"></i>
           <span class="nav-label text-sm font-medium">Create Course</span>
@@ -229,7 +273,7 @@
         <span class="nav-tooltip">Create Course</span>
       </a>
 
-      <a href="{% url 'instructor_submissions' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group">
+      <a href="{% url 'instructor_submissions' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_submissions %}{% endblock %}">
         <span class="nav-item-inner flex items-center gap-3 w-full">
           <i class="nav-icon ri-file-check-line text-xl flex-shrink-0"></i>
           <span class="nav-label text-sm font-medium">Submissions</span>
@@ -246,7 +290,6 @@
         </span>
         <span class="nav-tooltip">Assignments</span>
         <!-- Badge -->
-        <span class="nav-label ml-auto bg-primary-100 text-primary-600 text-xs font-semibold px-2 py-0.5 rounded-full">3</span>
       </a>
 
       <a href="{% url 'grades' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_grades %}{% endblock %}">
@@ -299,13 +342,16 @@
 
     <!-- Logout -->
     <div class="p-3 border-t border-slate-100">
-      <a href="{% url 'logout' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 cursor-pointer w-full">
-        <span class="nav-item-inner flex items-center gap-3 w-full">
-          <i class="nav-icon ri-logout-box-r-line text-xl flex-shrink-0"></i>
-          <span class="nav-label text-sm font-medium">Logout</span>
-        </span>
-        <span class="nav-tooltip">Logout</span>
-      </a>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 cursor-pointer w-full">
+          <span class="nav-item-inner flex items-center gap-3 w-full">
+            <i class="nav-icon ri-logout-box-r-line text-xl flex-shrink-0"></i>
+            <span class="nav-label text-sm font-medium">Logout</span>
+          </span>
+          <span class="nav-tooltip">Logout</span>
+        </button>
+      </form>
     </div>
 
   </aside>
@@ -316,7 +362,7 @@
   <div class="flex flex-col flex-1 overflow-hidden">
 
     <!-- TOPBAR -->
-    <header class="bg-white border-b border-slate-100 px-6 py-3.5 flex items-center gap-4 z-20 shadow-sm">
+    <header class="bg-gradient-to-r from-white via-indigo-50/60 to-cyan-50/50 border-b border-slate-100 px-6 py-3.5 flex items-center gap-4 z-20 shadow-sm">
 
       <!-- Sidebar Toggle Button -->
       <button id="sidebar-toggle"
@@ -337,7 +383,8 @@
           <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
           <input id="topbar-search"
                  type="text"
-               placeholder="{{ topbar_search_placeholder|default:'Search...' }}"
+                placeholder="{{ topbar_search_placeholder|default:'Search...' }}"
+                data-search-url="{{ topbar_course_search_url|default:'' }}"
                  class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all duration-200 focus:bg-white focus:border-primary-300"/>
         </div>
       </div>
@@ -345,24 +392,25 @@
       <!-- Right Side Actions -->
       <div class="flex items-center gap-2 ml-auto">
 
+        {% if show_topbar_notifications %}
         <!-- Notification Bell -->
         <div class="relative">
           <button id="notif-btn"
                   onclick="toggleNotif()"
-                  class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-all duration-200 relative">
+                  class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-primary-100 text-slate-500 hover:text-primary-600 transition-all duration-200 relative">
             <i class="ri-notification-3-line text-xl"></i>
             <span class="badge-pulse absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full"></span>
           </button>
 
           <!-- Notification Dropdown -->
-          <div id="notif-panel" class="hidden absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div id="notif-panel" class="topbar-panel-shell hidden absolute right-0 top-12 w-80 rounded-2xl border overflow-hidden z-50">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-cyan-50">
               <h3 class="font-semibold text-slate-800 text-sm">Notifications</h3>
-              <span class="text-xs text-primary-500 font-medium cursor-pointer hover:underline">Mark all read</span>
+              <span class="text-xs text-primary-600 font-semibold cursor-pointer hover:underline">Mark all read</span>
             </div>
             <div class="max-h-72 overflow-y-auto divide-y divide-slate-50">
               {% for notif in topbar_notifications %}
-              <div class="flex gap-3 px-4 py-3 hover:bg-slate-50 transition cursor-pointer">
+              <a href="{{ notif.url|default:'#' }}" class="topbar-panel-item flex gap-3 px-4 py-3 transition cursor-pointer">
                 <div class="w-8 h-8 rounded-full {{ notif.icon_wrap_class }} flex items-center justify-center flex-shrink-0">
                   <i class="{{ notif.icon }} {{ notif.icon_class }} text-sm"></i>
                 </div>
@@ -371,51 +419,55 @@
                   <p class="text-xs text-slate-400 mt-0.5">{{ notif.subtitle }}</p>
                   <p class="text-xs text-slate-400">{{ notif.time }}</p>
                 </div>
-              </div>
+              </a>
               {% empty %}
               <div class="px-4 py-6 text-center">
                 <p class="text-sm text-slate-500">No notifications yet.</p>
               </div>
               {% endfor %}
             </div>
-            <div class="px-4 py-3 border-t border-slate-100 text-center">
-              <a href="#" class="text-xs text-primary-500 font-medium hover:underline">View all notifications</a>
+            <div class="px-4 py-3 border-t border-indigo-100 text-center bg-gradient-to-r from-indigo-50/70 to-cyan-50/60">
+              <a href="{% url 'announcements' %}" class="text-xs text-primary-600 font-semibold hover:underline">View all notifications</a>
             </div>
           </div>
         </div>
+        {% endif %}
 
         <!-- User Avatar Dropdown -->
         <div class="relative">
           <button id="user-btn"
                   onclick="toggleUserMenu()"
-                  class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-50 transition-all duration-200">
+              class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-indigo-50 hover:to-cyan-50 transition-all duration-200 border border-transparent hover:border-indigo-100">
             <img src="https://ui-avatars.com/api/?name={{ current_user_name|urlencode }}&background=4f46e5&color=fff&size=64"
                  class="w-8 h-8 rounded-full object-cover" alt="User"/>
             <div class="text-left hidden sm:block">
-              <p class="text-xs font-semibold text-slate-700 leading-tight">{% block topbar_user %}John Doe{% endblock %}</p>
-              <p class="text-xs text-slate-400 leading-tight">{% block topbar_role %}Student{% endblock %}</p>
+              <p class="text-xs font-semibold text-slate-700 leading-tight">{% block topbar_user %}{{ current_user_name }}{% endblock %}</p>
+              <p class="text-xs text-slate-400 leading-tight">{% block topbar_role %}{{ current_user_role|title }}{% endblock %}</p>
             </div>
             <i class="ri-arrow-down-s-line text-slate-400 text-sm"></i>
           </button>
 
           <!-- User Dropdown -->
-          <div id="user-dropdown" class="hidden absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
-            <div class="px-4 py-3 border-b border-slate-100">
+          <div id="user-dropdown" class="topbar-panel-shell hidden absolute right-0 top-12 w-52 rounded-2xl border overflow-hidden z-50">
+            <div class="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-cyan-50">
               <p class="text-sm font-semibold text-slate-800">{{ current_user_name }}</p>
               <p class="text-xs text-slate-400">{{ current_user_email|default:"no-email@set.local" }}</p>
             </div>
             <div class="py-1">
-              <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary-600 transition">
+              <a href="{% url 'profile' %}" class="topbar-panel-item flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 transition">
                 <i class="ri-user-line text-base"></i> My Profile
               </a>
-              <a href="{% url 'settings' %}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary-600 transition">
+              <a href="{% url 'settings' %}" class="topbar-panel-item flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 transition">
                 <i class="ri-settings-3-line text-base"></i> Settings
               </a>
             </div>
-            <div class="border-t border-slate-100 py-1">
-              <a href="{% url 'logout' %}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-50 transition">
-                <i class="ri-logout-box-r-line text-base"></i> Logout
-              </a>
+            <div class="border-t border-indigo-100 py-1 bg-gradient-to-r from-rose-50/30 to-white">
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition">
+                  <i class="ri-logout-box-r-line text-base"></i> Logout
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -426,6 +478,15 @@
     <!-- PAGE CONTENT -->
     <main class="flex-1 overflow-y-auto bg-slate-50">
       <div class="page-content p-6">
+        {% if messages %}
+        <div id="global-flash-wrap" class="space-y-2 mb-4">
+          {% for message in messages %}
+          <div class="global-flash-message rounded-xl px-4 py-3 text-sm border transition-all duration-500 {% if message.tags == 'error' %}bg-red-50 text-red-700 border-red-100{% else %}bg-emerald-50 text-emerald-700 border-emerald-100{% endif %}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
         {% block content %}
         <!-- Page content goes here -->
         {% endblock %}
@@ -468,6 +529,7 @@
     let notifOpen = false;
 
     function toggleNotif() {
+      if (!notifPanel) return;
       notifOpen = !notifOpen;
       notifPanel.classList.toggle('hidden', !notifOpen);
       if (notifOpen) closeUserMenu();
@@ -489,13 +551,14 @@
     }
 
     function closeNotif() {
+      if (!notifPanel) return;
       notifOpen = false;
       notifPanel.classList.add('hidden');
     }
 
     // ── Close dropdowns on outside click ──
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('#notif-btn') && !e.target.closest('#notif-panel')) closeNotif();
+      if (notifPanel && !e.target.closest('#notif-btn') && !e.target.closest('#notif-panel')) closeNotif();
       if (!e.target.closest('#user-btn') && !e.target.closest('#user-dropdown')) closeUserMenu();
     });
 
@@ -505,6 +568,30 @@
         e.preventDefault();
         document.getElementById('topbar-search').focus();
       }
+    });
+
+    // ── Topbar course search (students) ──
+    const topbarSearch = document.getElementById('topbar-search');
+    if (topbarSearch) {
+      topbarSearch.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const searchUrl = (topbarSearch.dataset.searchUrl || '').trim();
+        if (!searchUrl) return;
+        const term = topbarSearch.value.trim();
+        window.location.href = term
+          ? `${searchUrl}?q=${encodeURIComponent(term)}`
+          : searchUrl;
+      });
+    }
+
+    // ── Auto-dismiss flash messages ──
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.global-flash-message').forEach((el, idx) => {
+        setTimeout(() => {
+          el.classList.add('opacity-0', '-translate-y-1');
+          setTimeout(() => el.remove(), 500);
+        }, 3000 + (idx * 200));
+      });
     });
   </script>
 
