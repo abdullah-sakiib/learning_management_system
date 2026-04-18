@@ -30,6 +30,11 @@
         <span class="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-semibold">
           <i class="ri-user-star-line mr-1"></i> Instructor {{ course.display_instructor_rating|default:0|floatformat:1 }} ({{ course.instructor_review_count|default:0 }})
         </span>
+        {% if course.is_ended %}
+        <span class="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 font-semibold">
+          <i class="ri-flag-line mr-1"></i> Ended {{ course.ended_at|date:"M d, Y" }}
+        </span>
+        {% endif %}
       </div>
       <div class="mt-4 grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
         <p><strong>Category:</strong> {{ course.category|default:"General" }}</p>
@@ -120,7 +125,9 @@
         <button type="submit" class="w-full px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition">Cancel Request</button>
       </form>
       {% else %}
-      {% if course.max_students and course.is_at_capacity %}
+      {% if course.is_ended %}
+      <button type="button" disabled class="w-full px-4 py-2 rounded-xl bg-slate-200 text-slate-600 text-sm font-semibold cursor-not-allowed">Course Ended</button>
+      {% elif course.max_students and course.is_at_capacity %}
       <button type="button" disabled class="w-full px-4 py-2 rounded-xl bg-slate-200 text-slate-600 text-sm font-semibold cursor-not-allowed">Course Full</button>
       {% else %}
       <form method="post" action="{% url 'course_enroll' course.id %}">

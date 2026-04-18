@@ -84,6 +84,14 @@
                 <a href="{% url 'course_detail' course.id %}" class="hover:text-indigo-600 hover:underline" onclick="event.stopPropagation();">{{ course.name }}</a>
               </p>
               <p class="text-xs text-slate-500 mt-1">Instructor: {{ course.instructor }}</p>
+              <div class="mt-1 flex flex-wrap items-center gap-2">
+                {% if course.is_course_ended %}
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">Course Ended</span>
+                {% endif %}
+                {% if course.certificate_available %}
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">Certificate Ready</span>
+                {% endif %}
+              </div>
             </div>
             <div class="text-right min-w-20">
               <p class="text-sm font-semibold text-slate-700">{{ course.progress }}%</p>
@@ -120,6 +128,11 @@
           <a href="{% url 'course_detail' course.id %}" class="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition">Open Course</a>
           <a href="{% url 'assignments' %}" class="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition">Assignments</a>
           <a href="{% url 'quiz' %}" class="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition">Quizzes</a>
+          {% if course.certificate_available %}
+          <a href="{% url 'course_certificate_download' course.id %}" class="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition">Download Certificate</a>
+          {% elif course.is_course_ended %}
+          <span class="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg border border-amber-200 text-amber-700 bg-amber-50">Finish all modules to unlock certificate</span>
+          {% endif %}
         </div>
       </details>
       {% empty %}

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Course Certificate</title>
+  <style>
+    :root {
+      --ink: #1f2937;
+      --muted: #475569;
+      --accent: #0f766e;
+      --accent-light: #ccfbf1;
+      --border: #a7f3d0;
+      --paper: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Georgia", "Times New Roman", serif;
+    }
+
+    .certificate {
+      max-width: 960px;
+      margin: 0 auto;
+      border: 3px solid var(--accent);
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 40px 44px;
+      box-shadow: 0 16px 40px rgba(15, 118, 110, 0.08);
+    }
+
+    .top-ribbon {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid var(--border);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 16px 0 6px;
+      font-size: 42px;
+      line-height: 1.1;
+      color: #134e4a;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .student-name {
+      margin: 30px 0 14px;
+      font-size: 40px;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      display: inline-block;
+      padding-bottom: 8px;
+    }
+
+    .course-line {
+      margin: 0;
+      font-size: 20px;
+      color: #0f172a;
+    }
+
+    .meta {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .meta-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #f8fafc;
+    }
+
+    .meta-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin: 0 0 4px;
+      font-weight: 700;
+    }
+
+    .meta-value {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .footnote {
+      margin-top: 32px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 10px;
+      }
+      .certificate {
+        padding: 24px 18px;
+      }
+      h1 {
+        font-size: 32px;
+      }
+      .student-name {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="certificate">
+    <span class="top-ribbon">Certificate of Completion</span>
+    <h1>EduFlow Learning Certificate</h1>
+    <p class="subtitle">This certifies that</p>
+
+    <h2 class="student-name">{{ student_name }}</h2>
+    <p class="course-line">has successfully completed the course <strong>{{ course.title }}</strong>.</p>
+
+    <section class="meta">
+      <article class="meta-card">
+        <p class="meta-label">Instructor</p>
+        <p class="meta-value">{{ instructor_name }}</p>
+      </article>
+      <article class="meta-card">
+        <p class="meta-label">Issue Date</p>
+        <p class="meta-value">{{ issued_on|date:"M d, Y" }}</p>
+      </article>
+      <article class="meta-card">
+        <p class="meta-label">Certificate Code</p>
+        <p class="meta-value">{{ certificate_code }}</p>
+      </article>
+    </section>
+
+    <p class="footnote">Issued by EduFlow LMS after course end and full module completion verification.</p>
+  </main>
+</body>
+</html>

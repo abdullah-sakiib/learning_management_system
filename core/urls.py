@@ -43,6 +43,7 @@ urlpatterns = [
     path("courses/<int:course_id>/", views.course_detail, name="course_detail"),
     path("courses/<int:course_id>/content/", views.course_content, name="course_content"),
     path("courses/<int:course_id>/discussion/", views.course_discussion, name="course_discussion"),
+    path("courses/<int:course_id>/certificate/", views.course_certificate_download, name="course_certificate_download"),
     path("courses/<int:course_id>/review/", views.course_submit_review, name="course_submit_review"),
     path("courses/<int:course_id>/enroll/", views.course_enroll, name="course_enroll"),
     path("courses/<int:course_id>/unenroll/", views.course_unenroll, name="course_unenroll"),

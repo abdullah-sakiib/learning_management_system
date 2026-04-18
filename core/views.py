@@ -7,8 +7,10 @@ from django.contrib.auth.models import User
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.text import slugify
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 
 from .models import (
     Announcement,
@@ -66,6 +68,23 @@ def build_teacher_id(user_id):
 
 def approved_enrollments_qs():
     return Enrollment.objects.filter(status=Enrollment.STATUS_APPROVED)
+
+
+def get_module_completion_status(enrollment):
+    total_modules = CourseModule.objects.filter(
+        course=enrollment.course,
+        is_published=True,
+    ).count()
+    if total_modules <= 0:
+        return 0, 0, False
+
+    completed_modules = ModuleCompletion.objects.filter(
+        enrollment=enrollment,
+        module__course=enrollment.course,
+        module__is_published=True,
+    ).values("module_id").distinct().count()
+
+    return total_modules, completed_modules, completed_modules >= total_modules
 
 
 def attach_course_rating_metadata(courses):
@@ -681,6 +700,46 @@ def course_content(request, course_id):
     )
 
 
+@role_required(Profile.ROLE_STUDENT)
+def course_certificate_download(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    enrollment = approved_enrollments_qs().filter(student=request.user, course=course).first()
+
+    if not enrollment:
+        messages.error(request, "You must be enrolled in this course to download a certificate.")
+        return redirect("student_dashboard")
+
+    if not course.is_ended:
+        messages.error(request, "This course is not ended yet. Certificate is not available.")
+        return redirect("course_detail", course_id=course.id)
+
+    total_modules, completed_modules, is_completed = get_module_completion_status(enrollment)
+    if not is_completed:
+        messages.error(
+            request,
+            f"Certificate is locked. Complete all modules first ({completed_modules}/{total_modules}).",
+        )
+        return redirect("course_content", course_id=course.id)
+
+    now_local = timezone.localtime(timezone.now())
+    certificate_code = f"EDU-{course.id:05d}-{request.user.id:05d}-{now_local:%Y%m%d}"
+    certificate_html = render_to_string(
+        "courses/certificate_download.html",
+        {
+            "course": course,
+            "student_name": get_display_name(request.user),
+            "instructor_name": get_display_name(course.instructor) if course.instructor else "Course Instructor",
+            "issued_on": now_local,
+            "certificate_code": certificate_code,
+        },
+    )
+
+    safe_course_name = slugify(course.title) or f"course-{course.id}"
+    response = HttpResponse(certificate_html, content_type="text/html; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{safe_course_name}-certificate.html"'
+    return response
+
+
 @login_required
 def course_discussion(request, course_id):
     course = get_object_or_404(
@@ -745,6 +804,10 @@ def course_enroll(request, course_id):
 
     if get_user_role(request.user) != Profile.ROLE_STUDENT:
         messages.error(request, "Only students can enroll in courses.")
+        return redirect("course_detail", course_id=course.id)
+
+    if course.is_ended:
+        messages.error(request, "This course has ended. New enrollments are closed.")
         return redirect("course_detail", course_id=course.id)
 
     existing_enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
@@ -1229,6 +1292,22 @@ def student_dashboard(request):
     enrollment_qs = list(approved_enrollments_qs().filter(student=request.user).select_related("course", "course__instructor"))
     course_ids = [e.course_id for e in enrollment_qs]
     enrolled_course_ids = set(course_ids)
+    enrollment_ids = [e.id for e in enrollment_qs]
+
+    module_totals_by_course = {
+        row["course_id"]: row["total"]
+        for row in CourseModule.objects.filter(
+            course_id__in=course_ids,
+            is_published=True,
+        ).values("course_id").annotate(total=Count("id"))
+    }
+    completed_modules_by_enrollment = {
+        row["enrollment_id"]: row["completed"]
+        for row in ModuleCompletion.objects.filter(
+            enrollment_id__in=enrollment_ids,
+            module__is_published=True,
+        ).values("enrollment_id").annotate(completed=Count("module", distinct=True))
+    }
 
     published_assignments = Assignment.objects.filter(
         is_published=True,
@@ -1304,6 +1383,11 @@ def student_dashboard(request):
         all_assignment_pcts.extend(assignment_pcts)
         all_quiz_pcts.extend(quiz_pcts)
 
+        total_modules = module_totals_by_course.get(cid, 0)
+        completed_modules = completed_modules_by_enrollment.get(enrollment.id, 0)
+        all_modules_completed = total_modules > 0 and completed_modules >= total_modules
+        certificate_available = enrollment.course.is_ended and all_modules_completed
+
         courses.append(
             {
                 "id": enrollment.course.id,
@@ -1318,6 +1402,8 @@ def student_dashboard(request):
                 "quiz_completed": completed_quiz_count,
                 "quiz_pending": quiz_pending,
                 "quiz_avg": quiz_avg,
+                "is_course_ended": enrollment.course.is_ended,
+                "certificate_available": certificate_available,
             }
         )
 
@@ -1786,6 +1872,20 @@ def instructor_manage_content(request, course_id):
 
     if request.method == "POST":
         form_type = request.POST.get("form_type", "course_meta").strip()
+
+        if form_type == "end_course":
+            if course.is_ended:
+                messages.info(request, "This course is already ended.")
+                return redirect("instructor_manage_content", course_id=course.id)
+
+            course.is_ended = True
+            course.ended_at = timezone.now()
+            course.save(update_fields=["is_ended", "ended_at", "updated_at"])
+            messages.success(
+                request,
+                "Course ended successfully. Students who completed all modules can now download certificates.",
+            )
+            return redirect("instructor_manage_content", course_id=course.id)
 
         if form_type == "delete_assignment":
             assignment_id = request.POST.get("assignment_id", "").strip()
@@ -2341,15 +2441,42 @@ def profile_page(request):
     }
 
     if role == Profile.ROLE_STUDENT:
-        enrollment_qs = approved_enrollments_qs().filter(student=request.user).select_related("course", "course__instructor")
+        enrollment_qs = list(
+            approved_enrollments_qs().filter(student=request.user).select_related("course", "course__instructor")
+        )
+        enrollment_ids = [enrollment.id for enrollment in enrollment_qs]
+        course_ids = [enrollment.course_id for enrollment in enrollment_qs]
+        module_totals_by_course = {
+            row["course_id"]: row["total"]
+            for row in CourseModule.objects.filter(
+                course_id__in=course_ids,
+                is_published=True,
+            ).values("course_id").annotate(total=Count("id"))
+        }
+        completed_modules_by_enrollment = {
+            row["enrollment_id"]: row["completed"]
+            for row in ModuleCompletion.objects.filter(
+                enrollment_id__in=enrollment_ids,
+                module__is_published=True,
+            ).values("enrollment_id").annotate(completed=Count("module", distinct=True))
+        }
+
         enrolled_courses = [
             {
+                "id": enrollment.course.id,
                 "title": enrollment.course.title,
                 "instructor": get_display_name(enrollment.course.instructor) if enrollment.course.instructor else "TBA",
                 "progress": enrollment.progress,
+                "is_course_ended": enrollment.course.is_ended,
+                "certificate_available": (
+                    enrollment.course.is_ended
+                    and module_totals_by_course.get(enrollment.course_id, 0) > 0
+                    and completed_modules_by_enrollment.get(enrollment.id, 0) >= module_totals_by_course.get(enrollment.course_id, 0)
+                ),
             }
             for enrollment in enrollment_qs
         ]
+        certificate_count = len([course for course in enrolled_courses if course["certificate_available"]])
 
         submission_count = Submission.objects.filter(student=request.user).count()
 
@@ -2414,6 +2541,7 @@ def profile_page(request):
         "course_count": len(enrolled_courses),
         "submitted": submission_count,
         "avg_grade": avg_grade,
+        "certificates": certificate_count if role == Profile.ROLE_STUDENT else 0,
     }
     default_teacher_id = profile.teacher_id or build_teacher_id(request.user.id)
 

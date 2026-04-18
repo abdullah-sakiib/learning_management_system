@@ -129,6 +129,11 @@
             <p class="text-lg font-bold text-slate-800">{{ profile_stats.submitted }}</p>
             <p class="text-xs text-slate-400">Submitted</p>
           </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.certificates }}</p>
+            <p class="text-xs text-slate-400">Certificates</p>
+          </div>
           {% else %}
           <div class="profile-stat text-center">
             <p class="text-lg font-bold text-slate-800">{{ instructor_summary.total_courses }}</p>
@@ -348,11 +353,18 @@
                       <p class="text-xs text-slate-400">{{ c.instructor }}</p>
                     </div>
                   </div>
-                  {% if c.progress is not None %}
-                  <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">{{ c.progress }}% complete</span>
-                  {% else %}
-                  <span class="text-xs text-primary-600 font-semibold bg-primary-50 px-2 py-0.5 rounded-full">Instructor</span>
-                  {% endif %}
+                  <div class="flex flex-wrap items-center justify-end gap-2">
+                    {% if c.progress is not None %}
+                    <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">{{ c.progress }}% complete</span>
+                    {% else %}
+                    <span class="text-xs text-primary-600 font-semibold bg-primary-50 px-2 py-0.5 rounded-full">Instructor</span>
+                    {% endif %}
+                    {% if c.certificate_available %}
+                    <a href="{% url 'course_certificate_download' c.id %}" class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full hover:bg-emerald-200 transition">Certificate</a>
+                    {% elif c.is_course_ended %}
+                    <span class="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Certificate Locked</span>
+                    {% endif %}
+                  </div>
                 </div>
                 {% empty %}
                 <p class="text-sm text-slate-500">No active courses yet.</p>
