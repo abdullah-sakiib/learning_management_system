@@ -39,6 +39,13 @@
         <p><strong>Enrollment:</strong> {% if course.enrollment_type == 'approval' %}Approval required{% else %}Open{% endif %}</p>
         <p><strong>Capacity:</strong> {% if course.max_students %}{{ course.approved_enrollment_count }} / {{ course.max_students }}{% else %}Unlimited{% endif %}</p>
       </div>
+      {% if course.tag_list %}
+      <div class="mt-4 flex flex-wrap gap-2">
+        {% for tag in course.tag_list %}
+        <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
       {% if course.description %}
       <div class="mt-4 text-sm text-slate-700 leading-relaxed">{{ course.description }}</div>
       {% endif %}

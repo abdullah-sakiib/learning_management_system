@@ -234,14 +234,16 @@ def dashboard(request):
 @login_required
 def course_catalog(request):
     search_query = request.GET.get("q", "").strip()
-    courses_qs = Course.objects.filter(
+    published_courses_qs = Course.objects.filter(
         is_published=True,
         instructor__profile__role=Profile.ROLE_INSTRUCTOR,
-    ).select_related("instructor")
+    )
+    courses_qs = published_courses_qs.select_related("instructor")
     if search_query:
         courses_qs = courses_qs.filter(
             Q(title__icontains=search_query)
             | Q(category__icontains=search_query)
+            | Q(tags__icontains=search_query)
             | Q(instructor__username__icontains=search_query)
             | Q(instructor__first_name__icontains=search_query)
             | Q(instructor__last_name__icontains=search_query)
@@ -249,14 +251,20 @@ def course_catalog(request):
     courses = attach_course_rating_metadata(courses_qs)
 
     categories = list(
-        Course.objects.filter(
-            is_published=True,
-            instructor__profile__role=Profile.ROLE_INSTRUCTOR,
-        )
+        published_courses_qs
         .exclude(category="")
         .values_list("category", flat=True)
         .distinct()
         .order_by("category")
+    )
+    tags = sorted(
+        {
+            tag.strip()
+            for tag_string in published_courses_qs.exclude(tags="").values_list("tags", flat=True)
+            for tag in tag_string.split(",")
+            if tag.strip()
+        },
+        key=str.lower,
     )
     enrolled_ids = set(
         approved_enrollments_qs().filter(student=request.user).values_list("course_id", flat=True)
@@ -264,6 +272,7 @@ def course_catalog(request):
     context = {
         "courses": courses,
         "categories": categories,
+        "tags": tags,
         "enrolled_course_ids": enrolled_ids,
         "search_query": search_query,
     }
@@ -273,15 +282,17 @@ def course_catalog(request):
 @role_required(Profile.ROLE_STUDENT)
 def student_course_catalog(request):
     search_query = request.GET.get("q", "").strip()
-    courses_qs = Course.objects.filter(
+    published_courses_qs = Course.objects.filter(
         is_published=True,
         instructor__profile__role=Profile.ROLE_INSTRUCTOR,
-    ).select_related("instructor")
+    )
+    courses_qs = published_courses_qs.select_related("instructor")
 
     if search_query:
         courses_qs = courses_qs.filter(
             Q(title__icontains=search_query)
             | Q(category__icontains=search_query)
+            | Q(tags__icontains=search_query)
             | Q(instructor__username__icontains=search_query)
             | Q(instructor__first_name__icontains=search_query)
             | Q(instructor__last_name__icontains=search_query)
@@ -289,14 +300,20 @@ def student_course_catalog(request):
     courses = attach_course_rating_metadata(courses_qs)
 
     categories = list(
-        Course.objects.filter(
-            is_published=True,
-            instructor__profile__role=Profile.ROLE_INSTRUCTOR,
-        )
+        published_courses_qs
         .exclude(category="")
         .values_list("category", flat=True)
         .distinct()
         .order_by("category")
+    )
+    tags = sorted(
+        {
+            tag.strip()
+            for tag_string in published_courses_qs.exclude(tags="").values_list("tags", flat=True)
+            for tag in tag_string.split(",")
+            if tag.strip()
+        },
+        key=str.lower,
     )
     enrolled_ids = set(
         approved_enrollments_qs().filter(student=request.user).values_list("course_id", flat=True)
@@ -304,6 +321,7 @@ def student_course_catalog(request):
     context = {
         "courses": courses,
         "categories": categories,
+        "tags": tags,
         "enrolled_course_ids": enrolled_ids,
         "search_query": search_query,
         "is_dedicated_student_catalog": True,
@@ -1621,6 +1639,21 @@ def instructor_create_course(request):
         description = request.POST.get("description", "").strip()
         thumbnail = request.FILES.get("thumbnail")
         intro_video = request.FILES.get("intro_video")
+        raw_tags = request.POST.get("tags", "")
+
+        deduped_tags = []
+        seen_tags = set()
+        for tag in raw_tags.split(","):
+            clean_tag = tag.strip()
+            if not clean_tag:
+                continue
+            normalized = clean_tag.lower()
+            if normalized in seen_tags:
+                continue
+            seen_tags.add(normalized)
+            deduped_tags.append(clean_tag)
+
+        normalized_tags = ", ".join(deduped_tags[:12])
 
         if not title:
             messages.error(request, "Course title is required.")
@@ -1644,6 +1677,7 @@ def instructor_create_course(request):
             short_description=short_desc or ((description[:277] + "...") if len(description) > 280 else description),
             description=description,
             category=category,
+            tags=normalized_tags,
             level=level if level in {Course.LEVEL_BEGINNER, Course.LEVEL_INTERMEDIATE, Course.LEVEL_ADVANCED} else Course.LEVEL_BEGINNER,
             duration_weeks=max(1, weeks),
             instructor=request.user,

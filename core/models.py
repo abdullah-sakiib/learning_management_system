@@ -73,6 +73,7 @@ class Course(models.Model):
     short_description = models.CharField(max_length=280, blank=True)
     description = models.TextField(blank=True)
     category = models.CharField(max_length=80, blank=True)
+    tags = models.CharField(max_length=280, blank=True)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default=LEVEL_BEGINNER)
     duration_weeks = models.PositiveIntegerField(default=12)
     lecture_count = models.PositiveIntegerField(default=10)
@@ -109,6 +110,10 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def tag_list(self):
+        return [tag.strip() for tag in self.tags.split(",") if tag.strip()]
 
     @property
     def approved_enrollment_count(self):

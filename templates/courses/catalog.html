@@ -42,6 +42,12 @@
     color: white;
     border-color: #4f46e5;
   }
+  .tag-filter-btn { transition: all 0.2s ease; }
+  .tag-filter-btn.active {
+    background: #0f766e;
+    color: white;
+    border-color: #0f766e;
+  }
 
   /* List view row */
   .list-row {
@@ -102,6 +108,15 @@
       <option value="Advanced">Advanced</option>
     </select>
 
+    <!-- Tag filter -->
+    <select id="tag-filter" onchange="setTag(this.value)"
+      class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+      <option value="">All tags</option>
+      {% for tag in tags %}
+      <option value="{{ tag|lower }}">#{{ tag }}</option>
+      {% endfor %}
+    </select>
+
     <!-- View toggle -->
     <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 flex-shrink-0">
       <button onclick="setView('grid')" id="view-grid"
@@ -124,6 +139,17 @@
     </button>
     {% endfor %}
   </div>
+
+  {% if tags %}
+  <div class="flex flex-wrap gap-2 mt-3">
+    <button onclick="setTag('')" class="tag-filter-btn active text-xs font-semibold border border-teal-200 text-teal-700 px-3 py-1.5 rounded-full transition-all" data-tag="">All tags</button>
+    {% for tag in tags %}
+    <button onclick="setTag('{{ tag|lower|escapejs }}')" class="tag-filter-btn text-xs font-semibold border border-teal-200 text-teal-700 px-3 py-1.5 rounded-full transition-all" data-tag="{{ tag|lower }}">
+      #{{ tag }}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
 <!-- Results count -->
@@ -145,6 +171,7 @@
   {% for course in courses %}
     <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal cursor-pointer"
        data-category="{{ course.category }}" data-level="{{ course.level }}" data-name="{{ course.title }}"
+       data-tags="{{ course.tags|lower }}"
        data-instructor="{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %}"
       data-students="{{ course.approved_enrollment_count }}" data-rating="{{ course.display_course_rating|default:course.rating|default:0 }}"
       onclick="window.location='{% url 'course_detail' course.id %}'">
@@ -180,6 +207,13 @@
         <span class="flex items-center gap-1"><i class="ri-group-line"></i> {{ course.approved_enrollment_count }} students</span>
         <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> {{ course.lecture_count }} lectures</span>
       </div>
+      {% if course.tag_list %}
+      <div class="mb-3 flex flex-wrap gap-1.5">
+        {% for tag in course.tag_list|slice:":3" %}
+        <span class="text-[11px] px-2 py-1 rounded-full bg-slate-100 text-slate-600">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <i class="ri-star-fill text-amber-400 text-xs"></i>
@@ -207,6 +241,7 @@
   {% for course in courses %}
   <div class="list-row bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4 cursor-pointer reveal"
        data-category="{{ course.category }}" data-level="{{ course.level }}" data-name="{{ course.title }}"
+      data-tags="{{ course.tags|lower }}"
        data-instructor="{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %}"
        onclick="window.location='{% url 'course_detail' course.id %}'">
     <div class="w-12 h-12 rounded-xl flex-shrink-0 {% cycle 'bg-indigo-100' 'bg-violet-100' 'bg-emerald-100' 'bg-sky-100' 'bg-rose-100' 'bg-amber-100' %} flex items-center justify-center">
@@ -215,6 +250,13 @@
     <div class="flex-1 min-w-0">
       <p class="text-sm font-semibold text-slate-800 truncate">{{ course.title }}</p>
       <p class="text-xs text-slate-400">{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %} · {{ course.approved_enrollment_count }} students</p>
+      {% if course.tag_list %}
+      <p class="text-[11px] text-slate-400 truncate mt-0.5">
+        {% for tag in course.tag_list|slice:":3" %}
+          #{{ tag }}{% if not forloop.last %} · {% endif %}
+        {% endfor %}
+      </p>
+      {% endif %}
     </div>
     <div class="hidden sm:flex items-center gap-4 flex-shrink-0">
       <span class="text-xs text-slate-500">{{ course.duration_weeks }} weeks</span>
@@ -258,6 +300,7 @@
 <script>
   let activeView = 'grid';
   let activeCat  = '';
+  let activeTag  = '';
 
   function setView(v) {
     activeView = v;
@@ -276,10 +319,23 @@
     filterCourses();
   }
 
+  function setTag(tag) {
+    activeTag = tag;
+    document.querySelectorAll('.tag-filter-btn[data-tag]').forEach(b => {
+      b.classList.toggle('active', b.dataset.tag === tag);
+    });
+    const tagFilter = document.getElementById('tag-filter');
+    if (tagFilter) {
+      tagFilter.value = tag;
+    }
+    filterCourses();
+  }
+
   function filterCourses() {
     const search = document.getElementById('search-input').value.toLowerCase();
     const level  = document.getElementById('level-filter').value;
     const cat    = activeCat || document.getElementById('category-filter').value;
+    const tag    = activeTag || document.getElementById('tag-filter').value;
     const cards  = document.querySelectorAll('#grid-view .course-card');
     const rows   = document.querySelectorAll('#list-view .list-row');
     let count = 0;
@@ -287,10 +343,12 @@
     cards.forEach(card => {
       const name  = card.dataset.name.toLowerCase();
       const inst  = card.dataset.instructor.toLowerCase();
+      const tags  = (card.dataset.tags || '').toLowerCase();
       const ccat  = card.dataset.category;
       const clvl  = card.dataset.level;
-      const match = (!search || name.includes(search) || inst.includes(search))
+      const match = (!search || name.includes(search) || inst.includes(search) || tags.includes(search))
                  && (!cat    || ccat === cat)
+                 && (!tag    || tags.split(',').map(t => t.trim()).includes(tag))
                  && (!level  || clvl === level);
       card.style.display = match ? '' : 'none';
       if (match) count++;
@@ -299,10 +357,12 @@
     rows.forEach(row => {
       const name  = row.dataset.name.toLowerCase();
       const inst  = row.dataset.instructor.toLowerCase();
+      const tags  = (row.dataset.tags || '').toLowerCase();
       const ccat  = row.dataset.category;
       const clvl  = row.dataset.level;
-      const match = (!search || name.includes(search) || inst.includes(search))
+      const match = (!search || name.includes(search) || inst.includes(search) || tags.includes(search))
                  && (!cat    || ccat === cat)
+                 && (!tag    || tags.split(',').map(t => t.trim()).includes(tag))
                  && (!level  || clvl === level);
       row.style.display = match ? '' : 'none';
     });
@@ -313,11 +373,21 @@
 
   function resetFilters() {
     activeCat = '';
+    activeTag = '';
     document.getElementById('search-input').value = '';
     document.getElementById('category-filter').value = '';
     document.getElementById('level-filter').value = '';
+    const tagFilter = document.getElementById('tag-filter');
+    if (tagFilter) {
+      tagFilter.value = '';
+    }
     document.querySelectorAll('.filter-btn[data-cat]').forEach(b => b.classList.remove('active'));
     document.querySelector('.filter-btn[data-cat=""]').classList.add('active');
+    document.querySelectorAll('.tag-filter-btn[data-tag]').forEach(b => b.classList.remove('active'));
+    const allTagButton = document.querySelector('.tag-filter-btn[data-tag=""]');
+    if (allTagButton) {
+      allTagButton.classList.add('active');
+    }
     filterCourses();
   }
 
