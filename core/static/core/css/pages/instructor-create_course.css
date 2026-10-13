@@ -1,0 +1,71 @@
+.reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+
+  /* Step indicator */
+  .step-dot {
+    transition: all 0.3s ease;
+  }
+  .step-dot.active {
+    background: #4f46e5;
+    color: white;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  }
+  .step-dot.done {
+    background: #22c55e;
+    color: white;
+  }
+  .step-line {
+    transition: background 0.4s ease;
+  }
+  .step-line.done { background: #22c55e; }
+
+  /* Thumbnail upload */
+  .thumb-zone:hover { border-color: #a5b4fc; background: #f5f3ff; }
+  .thumb-zone { transition: all 0.2s ease; }
+
+  /* Tag input */
+  .tag-pill {
+    transition: all 0.2s ease;
+  }
+  .tag-pill:hover { background: #fecaca; }
+
+  /* Publish toggle */
+  .toggle-track {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #cbd5e1;
+    border-radius: 12px;
+    transition: background 0.2s ease;
+    cursor: pointer;
+  }
+  .toggle-track.on { background: #4f46e5; }
+  .toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .toggle-track.on .toggle-knob { transform: translateX(20px); }

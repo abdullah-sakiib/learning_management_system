@@ -1,0 +1,13 @@
+.hero-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(2px);
+    opacity: 0.4;
+  }
+  .dashboard-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .dashboard-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  }

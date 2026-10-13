@@ -1,0 +1,176 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Instructor Dashboard - EduFlow{% endblock %}
+{% block page_title %}Instructor Dashboard{% endblock %}
+{% block page_subtitle %}Manage courses and student submissions{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'core/css/pages/dashboard-instructor.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+  <section class="relative overflow-hidden rounded-3xl border border-slate-100 bg-gradient-to-br from-cyan-100 via-indigo-100 to-fuchsia-100 p-6">
+    <span class="hero-orb w-32 h-32 bg-cyan-300 top-0 -left-8"></span>
+    <span class="hero-orb w-40 h-40 bg-fuchsia-300 bottom-0 right-8"></span>
+    <div class="relative flex items-end justify-between gap-4 flex-wrap">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] font-semibold text-indigo-700">Instructor Hub</p>
+        <h2 class="text-2xl font-bold text-slate-800 mt-1">Teach With Clarity And Speed</h2>
+        <p class="text-sm text-slate-600 mt-1">Manage course delivery, review submissions, and keep learners moving.</p>
+      </div>
+      <a href="{% url 'instructor_create_course' %}" class="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-white/80 border border-white text-slate-700 hover:bg-white transition">
+        <i class="ri-add-circle-line"></i> New Course
+      </a>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="dash-card rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-100 p-4">
+      <p class="text-xs text-indigo-700 font-semibold">Courses</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.courses }}</p>
+    </div>
+    <div class="dash-card rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-lime-100 p-4">
+      <p class="text-xs text-emerald-700 font-semibold">Students</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.students }}</p>
+    </div>
+    <div class="dash-card rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 p-4">
+      <p class="text-xs text-amber-700 font-semibold">Pending Submissions</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.pending_submissions }}</p>
+    </div>
+    <div class="dash-card rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-100 p-4">
+      <p class="text-xs text-violet-700 font-semibold">Average Student Completion</p>
+      <p class="text-2xl font-bold text-slate-800 mt-1">{{ instructor_stats.completion }}%</p>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-5">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-semibold text-slate-800">My Courses</h3>
+        <a href="{% url 'instructor_create_course' %}" class="text-sm font-semibold text-indigo-600">Create</a>
+      </div>
+      <div class="divide-y divide-slate-100">
+        {% for course in instructor_courses %}
+        <a href="{% url 'instructor_manage_content' course.id %}" class="block px-5 py-4 hover:bg-indigo-50 transition">
+          <p class="font-medium text-slate-800">{{ course.title }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ course.category|default:'General' }} | {{ course.level }} | {{ course.approved_enrollment_count }} students</p>
+        </a>
+        {% empty %}
+        <div class="px-5 py-8 text-center text-slate-500 text-sm">No courses yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-semibold text-slate-800">Pending Reviews</h3>
+        <a href="{% url 'instructor_submissions' %}" class="text-sm font-semibold text-indigo-600">Open grading</a>
+      </div>
+      <div class="divide-y divide-slate-100">
+        {% for submission in pending_submission_list %}
+        <div class="px-5 py-4 hover:bg-amber-50 transition">
+          <p class="font-medium text-slate-800">{{ submission.assignment.title }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ submission.student.get_full_name|default:submission.student.username }} | {{ submission.assignment.course.title }}</p>
+        </div>
+        {% empty %}
+        <div class="px-5 py-8 text-center text-slate-500 text-sm">No pending submissions.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-5">
+    <section class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-slate-800">Top Students In Your Courses</h3>
+        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Ranked by performance</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-xs uppercase tracking-wide text-slate-500 border-b border-slate-100">
+              <th class="text-left py-2 pr-3">Student</th>
+              <th class="text-left py-2 pr-3">Courses</th>
+              <th class="text-left py-2 pr-3">Progress</th>
+              <th class="text-left py-2 pr-3">Assignment</th>
+              <th class="text-left py-2 pr-3">Quiz</th>
+              <th class="text-left py-2">Overall</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in top_students %}
+            <tr class="hover:bg-indigo-50/70 transition">
+              <td class="py-3 pr-3">
+                <p class="font-semibold text-slate-800">{{ row.name }}</p>
+                <p class="text-xs text-slate-500">@{{ row.username }}</p>
+              </td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.course_count }}</td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.avg_progress }}%</td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.assignment_avg }}%</td>
+              <td class="py-3 pr-3 text-slate-700">{{ row.quiz_avg }}%</td>
+              <td class="py-3">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">{{ row.overall_score }}%</span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="py-6 text-center text-slate-500">No student performance data available yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-slate-800">Student Opinions</h3>
+        <i class="ri-chat-quote-line text-pink-500"></i>
+      </div>
+      <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+        {% for opinion in student_opinions %}
+        <div class="rounded-xl border border-pink-100 bg-gradient-to-r from-pink-50 to-rose-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-semibold text-slate-800">{{ opinion.student_name }}</p>
+            <span class="text-xs text-slate-500">{{ opinion.updated_at|date:"M d" }}</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">{{ opinion.course_title }}</p>
+          <p class="text-sm text-slate-700 mt-2">{{ opinion.comment|truncatechars:120 }}</p>
+          <p class="text-xs text-amber-700 mt-2">
+            <i class="ri-star-fill mr-1"></i>Course {{ opinion.course_rating }}/5 · Instructor {{ opinion.instructor_rating }}/5
+          </p>
+        </div>
+        {% empty %}
+        <p class="text-sm text-slate-500">No written student opinions yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-slate-800">Courses By Other Teachers</h3>
+      <a href="{% url 'courses' %}" class="text-sm font-semibold text-indigo-600">Browse all</a>
+    </div>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {% for course in other_courses %}
+      <a href="{% url 'course_detail' course.id %}" class="dash-card rounded-xl border border-slate-100 bg-gradient-to-br {% cycle 'from-orange-50 to-amber-100' 'from-cyan-50 to-sky-100' 'from-violet-50 to-fuchsia-100' 'from-emerald-50 to-lime-100' 'from-rose-50 to-pink-100' 'from-indigo-50 to-blue-100' %} p-4">
+        <p class="font-semibold text-slate-800 line-clamp-2">{{ course.title }}</p>
+        <p class="text-xs text-slate-600 mt-1">{{ course.instructor }}</p>
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-600">
+          <span>{{ course.category }} · {{ course.level }}</span>
+          <span><i class="ri-star-fill mr-1 text-amber-500"></i>{{ course.course_rating|floatformat:1 }}</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1"><i class="ri-group-line mr-1"></i>{{ course.enrollment_count }} students</p>
+      </a>
+      {% empty %}
+      <p class="text-sm text-slate-500 sm:col-span-2 xl:col-span-3">No other instructor courses found.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

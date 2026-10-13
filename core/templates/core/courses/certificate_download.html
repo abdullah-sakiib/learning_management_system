@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Course Certificate</title>
+  <link rel="stylesheet" href="{% static 'core/css/pages/courses-certificate_download.css' %}">
+</head>
+<body>
+  <main class="certificate">
+    <span class="top-ribbon">Certificate of Completion</span>
+    <h1>EduFlow Learning Certificate</h1>
+    <p class="subtitle">This certifies that</p>
+
+    <h2 class="student-name">{{ student_name }}</h2>
+    <p class="course-line">has successfully completed the course <strong>{{ course.title }}</strong>.</p>
+
+    <section class="meta">
+      <article class="meta-card">
+        <p class="meta-label">Instructor</p>
+        <p class="meta-value">{{ instructor_name }}</p>
+      </article>
+      <article class="meta-card">
+        <p class="meta-label">Issue Date</p>
+        <p class="meta-value">{{ issued_on|date:"M d, Y" }}</p>
+      </article>
+      <article class="meta-card">
+        <p class="meta-label">Certificate Code</p>
+        <p class="meta-value">{{ certificate_code }}</p>
+      </article>
+    </section>
+
+    <p class="footnote">Issued by EduFlow LMS after course end and full module completion verification.</p>
+  </main>
+</body>
+</html>

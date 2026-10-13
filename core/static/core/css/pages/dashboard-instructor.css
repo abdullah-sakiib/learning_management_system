@@ -1,0 +1,13 @@
+.dash-card {
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .dash-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+  }
+  .hero-orb {
+    position: absolute;
+    border-radius: 9999px;
+    opacity: 0.45;
+    filter: blur(2px);
+  }

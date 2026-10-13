@@ -1,0 +1,60 @@
+* { font-family: 'DM Sans', sans-serif; }
+    .font-serif { font-family: 'DM Serif Display', serif; }
+
+    /* Left panel background */
+    .left-panel {
+      background: linear-gradient(145deg, #0f172a 0%, #312e81 35%, #4f46e5 70%, #06b6d4 100%);
+    }
+
+    /* Dot grid */
+    .dot-grid {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Input focus ring */
+    .input-field:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    /* Btn */
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      box-shadow: 0 10px 26px rgba(79,70,229,0.34);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(99,102,241,0.45);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Card fade in */
+    .auth-card {
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Floating shapes on left panel */
+    @keyframes floatShape {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50%       { transform: translateY(-15px) rotate(5deg); }
+    }
+    .shape1 { animation: floatShape 7s ease-in-out infinite; }
+    .shape2 { animation: floatShape 9s ease-in-out 2s infinite; }
+    .shape3 { animation: floatShape 6s ease-in-out 1s infinite; }
+
+    /* Error shake */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-6px); }
+      40%       { transform: translateX(6px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+    .shake { animation: shake 0.4s ease; }

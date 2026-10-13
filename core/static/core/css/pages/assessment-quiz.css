@@ -1,0 +1,71 @@
+.reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); }
+
+  /* Quiz option */
+  .quiz-option {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .quiz-option:hover { border-color: #a5b4fc; background: #f5f3ff; }
+  .quiz-option.selected { border-color: #4f46e5; background: #eef2ff; }
+  .quiz-option.selected .opt-circle {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: white;
+  }
+  .quiz-option.correct { border-color: #22c55e; background: #f0fdf4; }
+  .quiz-option.correct .opt-circle { background: #22c55e; border-color: #22c55e; color: white; }
+  .quiz-option.wrong  { border-color: #ef4444; background: #fef2f2; }
+  .quiz-option.wrong  .opt-circle  { background: #ef4444; border-color: #ef4444; color: white; }
+
+  /* Timer ring */
+  .timer-ring-bg  { fill: none; stroke: #e2e8f0; stroke-width: 4; }
+  .timer-ring-fg  {
+    fill: none;
+    stroke: #4f46e5;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+  }
+  .timer-ring-fg.warning  { stroke: #f59e0b; }
+  .timer-ring-fg.critical { stroke: #ef4444; }
+
+  /* Question nav dots */
+  .q-dot {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .q-dot.current  { background: #4f46e5; color: white; }
+  .q-dot.answered { background: #22c55e; color: white; }
+  .q-dot.skipped  { background: #f59e0b; color: white; }
+
+  /* Progress bar */
+  .quiz-progress { transition: width 0.5s ease; }
+
+  /* Result score ring */
+  .score-ring-fg {
+    fill: none;
+    stroke: #22c55e;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Quiz card hover */
+  .quiz-list-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .quiz-list-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }

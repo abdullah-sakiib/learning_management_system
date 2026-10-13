@@ -1,0 +1,238 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Course Catalog — EduFlow{% endblock %}
+{% block page_title %}{% if is_student %}Course Catalog{% else %}Course Catalog{% endif %}{% endblock %}
+{% block page_subtitle %}{% if is_student %}Browse courses from all instructors{% else %}Browse and enroll in available courses{% endif %}{% endblock %}
+{% block nav_courses %}active{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'core/css/pages/courses-catalog.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════
+     SEARCH + FILTER BAR
+══════════════════════════════════ -->
+<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6 reveal">
+  <div class="flex flex-col md:flex-row gap-3">
+
+    <!-- Search -->
+    <div class="relative flex-1">
+      <i class="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+      <input type="text" id="search-input" placeholder="Search by course name, instructor..."
+        oninput="filterCourses()"
+        value="{{ search_query|default:'' }}"
+        class="input-field w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all"/>
+    </div>
+
+    <!-- Category filter -->
+    <select id="category-filter" onchange="filterCourses()"
+      class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+      <option value="">All categories</option>
+      {% for category in categories %}
+      <option value="{{ category }}">{{ category }}</option>
+      {% endfor %}
+    </select>
+
+    <!-- Level filter -->
+    <select id="level-filter" onchange="filterCourses()"
+      class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+      <option value="">All levels</option>
+      <option value="Beginner">Beginner</option>
+      <option value="Intermediate">Intermediate</option>
+      <option value="Advanced">Advanced</option>
+    </select>
+
+    <!-- Tag filter -->
+    <select id="tag-filter" onchange="setTag(this.value)"
+      class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+      <option value="">All tags</option>
+      {% for tag in tags %}
+      <option value="{{ tag|lower }}">#{{ tag }}</option>
+      {% endfor %}
+    </select>
+
+    <!-- View toggle -->
+    <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 flex-shrink-0">
+      <button onclick="setView('grid')" id="view-grid"
+        class="view-btn active w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 transition-all">
+        <i class="ri-grid-line text-sm"></i>
+      </button>
+      <button onclick="setView('list')" id="view-list"
+        class="view-btn w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 transition-all">
+        <i class="ri-list-unordered text-sm"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Category pills -->
+  <div class="flex flex-wrap gap-2 mt-3">
+    <button onclick="setCat('')" class="filter-btn active text-xs font-semibold border border-slate-200 px-3 py-1.5 rounded-full transition-all" data-cat="">All</button>
+    {% for category in categories %}
+    <button onclick="setCat('{{ category|escapejs }}')" class="filter-btn text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full transition-all" data-cat="{{ category }}">
+      <i class="ri-price-tag-3-line mr-1"></i>{{ category }}
+    </button>
+    {% endfor %}
+  </div>
+
+  {% if tags %}
+  <div class="flex flex-wrap gap-2 mt-3">
+    <button onclick="setTag('')" class="tag-filter-btn active text-xs font-semibold border border-teal-200 text-teal-700 px-3 py-1.5 rounded-full transition-all" data-tag="">All tags</button>
+    {% for tag in tags %}
+    <button onclick="setTag('{{ tag|lower|escapejs }}')" class="tag-filter-btn text-xs font-semibold border border-teal-200 text-teal-700 px-3 py-1.5 rounded-full transition-all" data-tag="{{ tag|lower }}">
+      #{{ tag }}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Results count -->
+<div class="flex items-center justify-between mb-4 reveal">
+  <p class="text-sm text-slate-500">Showing <span id="result-count" class="font-semibold text-slate-800">{{ courses|length }}</span> courses</p>
+  <select onchange="sortCourses(this.value)"
+    class="input-field text-xs border border-slate-200 rounded-xl px-3 py-2 text-slate-600 bg-white transition-all">
+    <option value="name">Sort: Name A–Z</option>
+    <option value="students">Sort: Most students</option>
+    <option value="rating">Sort: Highest rated</option>
+    <option value="newest">Sort: Newest</option>
+  </select>
+</div>
+
+<!-- ══════════════════════════════════
+     GRID VIEW
+══════════════════════════════════ -->
+<div id="grid-view" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+  {% for course in courses %}
+    <div class="course-card bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal cursor-pointer"
+       data-category="{{ course.category }}" data-level="{{ course.level }}" data-name="{{ course.title }}"
+       data-tags="{{ course.tags|lower }}"
+       data-instructor="{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %}"
+      data-students="{{ course.approved_enrollment_count }}" data-rating="{{ course.display_course_rating|default:course.rating|default:0 }}"
+      onclick="window.location='{% url 'course_detail' course.id %}'">
+    <div class="h-32 {% cycle 'bg-gradient-to-br from-indigo-500 to-indigo-700' 'bg-gradient-to-br from-violet-500 to-violet-700' 'bg-gradient-to-br from-emerald-500 to-emerald-700' 'bg-gradient-to-br from-sky-500 to-sky-700' 'bg-gradient-to-br from-rose-500 to-rose-700' 'bg-gradient-to-br from-amber-500 to-amber-700' %} relative overflow-hidden p-4 flex flex-col justify-between">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">{{ course.category|default:"General" }}</span>
+        {% if course.id in enrolled_course_ids %}
+        <span class="text-xs font-semibold bg-emerald-400 text-white px-2.5 py-1 rounded-full">Enrolled</span>
+        {% elif course.max_students and course.is_at_capacity %}
+        <span class="text-xs font-semibold bg-slate-700 text-white px-2.5 py-1 rounded-full">Full</span>
+        {% elif course.enrollment_type == 'approval' %}
+        <span class="text-xs font-semibold bg-amber-300 text-amber-900 px-2.5 py-1 rounded-full">Approval</span>
+        {% else %}
+        <span class="text-xs font-semibold bg-white/20 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">Open</span>
+        {% endif %}
+      </div>
+      <i class="ri-book-open-line text-white/20 text-6xl absolute -right-2 -bottom-2"></i>
+      <h3 class="font-bold text-white text-base leading-tight">{{ course.title }}</h3>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="https://ui-avatars.com/api/?name={% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username|urlencode }}{% else %}TBA{% endif %}&background=4f46e5&color=fff&size=32" class="w-6 h-6 rounded-full"/>
+        <div>
+          <span class="text-xs text-slate-500">{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %}</span>
+          <p class="text-[11px] text-amber-600">
+            <i class="ri-star-fill"></i> {{ course.display_instructor_rating|default:0|floatformat:1 }}
+            <span class="text-slate-400">({{ course.instructor_review_count|default:0 }})</span>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i class="ri-time-line"></i> {{ course.duration_weeks }} weeks</span>
+        <span class="flex items-center gap-1"><i class="ri-group-line"></i> {{ course.approved_enrollment_count }} students</span>
+        <span class="flex items-center gap-1"><i class="ri-book-2-line"></i> {{ course.lecture_count }} lectures</span>
+      </div>
+      {% if course.tag_list %}
+      <div class="mb-3 flex flex-wrap gap-1.5">
+        {% for tag in course.tag_list|slice:":3" %}
+        <span class="text-[11px] px-2 py-1 rounded-full bg-slate-100 text-slate-600">#{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <i class="ri-star-fill text-amber-400 text-xs"></i>
+          <span class="text-xs font-semibold text-slate-700">{{ course.display_course_rating|default:course.rating|default:0|floatformat:1 }}</span>
+          <span class="text-xs text-slate-400">({{ course.course_review_count|default:0 }})</span>
+          <span class="text-xs text-slate-400">· {{ course.level }}</span>
+        </div>
+        <a href="{% url 'course_detail' course.id %}"
+           class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition">
+          {% if course.id in enrolled_course_ids %}Continue{% else %}View details{% endif %} <i class="ri-arrow-right-line course-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-span-full text-sm text-slate-500">No published courses available yet.</div>
+  {% endfor %}
+
+</div>
+
+<!-- ══════════════════════════════════
+     LIST VIEW (hidden by default)
+══════════════════════════════════ -->
+<div id="list-view" class="hidden space-y-3">
+  {% for course in courses %}
+  <div class="list-row bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-4 cursor-pointer reveal"
+       data-category="{{ course.category }}" data-level="{{ course.level }}" data-name="{{ course.title }}"
+      data-tags="{{ course.tags|lower }}"
+       data-instructor="{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %}"
+       onclick="window.location='{% url 'course_detail' course.id %}'">
+    <div class="w-12 h-12 rounded-xl flex-shrink-0 {% cycle 'bg-indigo-100' 'bg-violet-100' 'bg-emerald-100' 'bg-sky-100' 'bg-rose-100' 'bg-amber-100' %} flex items-center justify-center">
+      <i class="text-xl ri-book-open-line {% cycle 'text-indigo-600' 'text-violet-600' 'text-emerald-600' 'text-sky-600' 'text-rose-600' 'text-amber-600' %}"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-slate-800 truncate">{{ course.title }}</p>
+      <p class="text-xs text-slate-400">{% if course.instructor %}{{ course.instructor.get_full_name|default:course.instructor.username }}{% else %}TBA{% endif %} · {{ course.approved_enrollment_count }} students</p>
+      {% if course.tag_list %}
+      <p class="text-[11px] text-slate-400 truncate mt-0.5">
+        {% for tag in course.tag_list|slice:":3" %}
+          #{{ tag }}{% if not forloop.last %} · {% endif %}
+        {% endfor %}
+      </p>
+      {% endif %}
+    </div>
+    <div class="hidden sm:flex items-center gap-4 flex-shrink-0">
+      <span class="text-xs text-slate-500">{{ course.duration_weeks }} weeks</span>
+      <div class="flex items-center gap-1">
+        <i class="ri-star-fill text-amber-400 text-xs"></i>
+        <span class="text-xs font-semibold text-slate-700">{{ course.display_course_rating|default:course.rating|default:0|floatformat:1 }}</span>
+        <span class="text-xs text-slate-400">({{ course.course_review_count|default:0 }})</span>
+      </div>
+      {% if course.id in enrolled_course_ids %}
+      <span class="text-xs bg-emerald-50 text-emerald-600 font-semibold px-2.5 py-0.5 rounded-full">Enrolled</span>
+      {% elif course.max_students and course.is_at_capacity %}
+      <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2.5 py-0.5 rounded-full">Full</span>
+      {% elif course.enrollment_type == 'approval' %}
+      <span class="text-xs bg-amber-50 text-amber-700 font-semibold px-2.5 py-0.5 rounded-full">Approval</span>
+      {% else %}
+      <span class="text-xs bg-slate-100 text-slate-500 font-semibold px-2.5 py-0.5 rounded-full">Open</span>
+      {% endif %}
+    </div>
+    <i class="ri-arrow-right-s-line text-slate-300 flex-shrink-0"></i>
+  </div>
+  {% empty %}
+  <div class="text-sm text-slate-500">No published courses available yet.</div>
+  {% endfor %}
+</div>
+
+<!-- Empty state -->
+<div id="empty-state" class="hidden text-center py-20">
+  <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+    <i class="ri-search-line text-slate-400 text-3xl"></i>
+  </div>
+  <p class="text-slate-600 font-semibold">No courses found</p>
+  <p class="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
+  <button onclick="resetFilters()" class="mt-4 text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-4 py-2 rounded-xl">
+    Clear filters
+  </button>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'core/js/pages/courses-catalog-1.js' %}"></script>
+{% endblock %}

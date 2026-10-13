@@ -1,0 +1,54 @@
+.stat-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(99,102,241,0.10);
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .user-row { transition: background 0.2s ease; }
+  .user-row:hover { background: #f8f7ff; }
+
+  .course-row { transition: background 0.2s ease; }
+  .course-row:hover { background: #f8f7ff; }
+
+  /* Sparkline bar */
+  .spark-bar {
+    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Donut chart simulation via conic-gradient */
+  .donut {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: conic-gradient(
+      #6366f1 0% 42%,
+      #a5b4fc 42% 67%,
+      #c7d2fe 67% 84%,
+      #e0e7ff 84% 100%
+    );
+    position: relative;
+  }
+  .donut::after {
+    content: '';
+    position: absolute;
+    inset: 18px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  .badge-active   { background:#f0fdf4; color:#16a34a; }
+  .badge-inactive { background:#f1f5f9; color:#64748b; }
+  .badge-pending  { background:#fffbeb; color:#d97706; }
+  .badge-banned   { background:#fef2f2; color:#dc2626; }
+
+  .action-btn { transition: all 0.2s ease; }
+  .action-btn:hover { transform: translateY(-1px); }

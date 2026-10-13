@@ -1,0 +1,45 @@
+.reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+  }
+
+  .tab-btn { transition: all 0.2s ease; }
+  .tab-btn.active {
+    background: white;
+    color: #4f46e5;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  /* Avatar upload hover */
+  .avatar-wrap:hover .avatar-overlay { opacity: 1; }
+  .avatar-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  /* Save btn */
+  .btn-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    transition: all 0.25s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+
+  /* Stat badge */
+  .profile-stat {
+    transition: transform 0.25s ease;
+  }
+  .profile-stat:hover { transform: translateY(-2px); }
+
+  .profile-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+    border-color: #e0e7ff;
+  }

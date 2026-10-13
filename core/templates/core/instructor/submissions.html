@@ -1,0 +1,223 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Submissions — EduFlow{% endblock %}
+{% block page_title %}Submissions{% endblock %}
+{% block page_subtitle %}Review and grade student work{% endblock %}
+{% block nav_submissions %}active{% endblock %}
+{% block user_name %}{{ current_user_name }}{% endblock %}
+{% block user_role %}Instructor{% endblock %}
+{% block topbar_user %}{{ current_user_name }}{% endblock %}
+{% block topbar_role %}Instructor{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'core/css/pages/instructor-submissions.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- ───── LEFT: Submissions list (2/3) ───── -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Filters + search -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 reveal">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <i class="ri-search-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="sub-search" placeholder="Search by student name or assignment..."
+            oninput="searchSubs(this.value)"
+            class="input-field w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all"/>
+        </div>
+        <select id="course-filter" onchange="filterSubs()" class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+          <option value="">All courses</option>
+          {% for title in submission_course_titles %}
+          <option>{{ title }}</option>
+          {% endfor %}
+        </select>
+        <select id="status-filter" onchange="filterSubs()" class="input-field px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 transition-all">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="graded">Graded</option>
+          <option value="late">Late</option>
+        </select>
+      </div>
+      <!-- Status pills -->
+      <div class="flex flex-wrap gap-2 mt-3">
+        <button onclick="setStatusFilter('all')" id="pill-all" class="filter-pill active text-xs font-semibold border border-slate-200 px-3 py-1.5 rounded-full">All <span class="ml-1 font-normal text-slate-400">{{ submission_counts.all }}</span></button>
+        <button onclick="setStatusFilter('pending')" id="pill-pending" class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Pending <span class="ml-1 font-normal text-slate-400">{{ submission_counts.pending }}</span></button>
+        <button onclick="setStatusFilter('graded')" id="pill-graded" class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Graded <span class="ml-1 font-normal text-slate-400">{{ submission_counts.graded }}</span></button>
+        <button onclick="setStatusFilter('late')" id="pill-late" class="filter-pill text-xs font-semibold border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Late <span class="ml-1 font-normal text-slate-400">{{ submission_counts.late }}</span></button>
+      </div>
+    </div>
+
+    <!-- Submissions table -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden reveal">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="sub-table">
+          <thead>
+            <tr class="text-xs text-slate-400 font-semibold uppercase tracking-wide border-b border-slate-100 bg-slate-50/50">
+              <th class="text-left px-5 py-3">Student</th>
+              <th class="text-left px-4 py-3">Assignment</th>
+              <th class="text-left px-4 py-3">Course</th>
+              <th class="text-left px-4 py-3">Submitted</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-left px-4 py-3">Score</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50" id="sub-tbody">
+            {% for submission in submissions %}
+            <tr class="sub-row"
+                data-status="{{ submission.status }}"
+                data-student="{{ submission.student.get_full_name|default:submission.student.username|escape }}"
+                data-submission-id="{{ submission.id }}"
+                data-assignment="{{ submission.assignment.title|escape }}"
+                data-course="{{ submission.assignment.course.title|escape }}"
+              data-max-score="{{ submission.assignment.max_score }}"
+                data-score="{% if submission.score is not None %}{{ submission.score|floatformat:-2 }}{% endif %}"
+                data-file="{% if submission.file %}{{ submission.file.name|escape }}{% endif %}"
+                onclick="openGrading(this)">
+              <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2.5">
+                  <img src="https://ui-avatars.com/api/?name={{ submission.student.get_full_name|default:submission.student.username|urlencode }}&background=4f46e5&color=fff&size=32" class="w-8 h-8 rounded-full"/>
+                  <div>
+                    <p class="text-xs font-semibold text-slate-700">{{ submission.student.get_full_name|default:submission.student.username }}</p>
+                    <p class="text-xs text-slate-400">@{{ submission.student.username }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3.5"><p class="text-xs font-medium text-slate-700 max-w-[220px] truncate">{{ submission.assignment.title }}</p></td>
+              <td class="px-4 py-3.5"><span class="text-xs bg-indigo-50 text-indigo-600 font-medium px-2 py-0.5 rounded-full">{{ submission.assignment.course.title }}</span></td>
+              <td class="px-4 py-3.5"><p class="text-xs text-slate-500">{{ submission.submitted_at|date:"M d, Y H:i" }}</p></td>
+              <td class="px-4 py-3.5">
+                {% if submission.status == 'graded' %}
+                <span class="badge-graded text-xs font-semibold px-2 py-0.5 rounded-full">Graded</span>
+                {% elif submission.status == 'late' %}
+                <span class="badge-late text-xs font-semibold px-2 py-0.5 rounded-full">Late</span>
+                {% else %}
+                <span class="badge-pending text-xs font-semibold px-2 py-0.5 rounded-full">Pending</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3.5">
+                {% if submission.score is not None %}
+                <span class="text-xs font-bold text-emerald-600">{{ submission.score|floatformat:-2 }}/{{ submission.assignment.max_score }}</span>
+                {% else %}
+                <span class="text-xs text-slate-400">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="px-5 py-8 text-center text-sm text-slate-500">No submissions available yet.</td>
+            </tr>
+            {% endfor %}
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ───── RIGHT: Grade panel ───── -->
+  <div id="grade-panel" class="space-y-4">
+
+    <!-- Empty state -->
+    <div id="grade-empty" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center reveal">
+      <div class="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i class="ri-edit-box-line text-primary-400 text-2xl"></i>
+      </div>
+      <p class="font-semibold text-slate-700 text-sm">Select a submission</p>
+      <p class="text-xs text-slate-400 mt-1">Click any row to open the grading panel.</p>
+    </div>
+
+    <!-- Grading form (shown on click) -->
+    <div id="grade-form" class="hidden space-y-4">
+
+      <!-- Student info -->
+      <form method="post" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal" id="grade-submit-form">
+        {% csrf_token %}
+        <input type="hidden" id="gf-submission-id" name="submission_id" value="" />
+        <div class="flex items-center gap-3 mb-4">
+          <img id="gf-avatar" src="" class="w-10 h-10 rounded-xl object-cover"/>
+          <div>
+            <p class="font-semibold text-slate-800 text-sm" id="gf-name"></p>
+            <p class="text-xs text-slate-400" id="gf-assignment"></p>
+          </div>
+        </div>
+
+        <!-- Submitted file preview -->
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 mb-4 cursor-pointer hover:bg-primary-50 hover:border-primary-100 transition">
+          <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="ri-file-pdf-line text-red-500"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-medium text-slate-700 truncate" id="gf-file">submission.pdf</p>
+            <p class="text-xs text-slate-400">Click to view</p>
+          </div>
+          <i class="ri-external-link-line text-slate-400"></i>
+        </div>
+
+        <!-- Score input -->
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">Score <span class="text-red-400">*</span></label>
+          <div class="flex items-center gap-3">
+            <input type="number" id="gf-score" min="0" max="100" placeholder="0"
+              oninput="updateScoreBar(this.value)"
+              name="score"
+              required
+              class="grade-input w-24 px-3.5 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-lg font-bold text-slate-800 text-center transition-all"/>
+            <span class="text-slate-400 font-medium">/ <span id="gf-max-score">100</span></span>
+            <div class="flex-1">
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="score-bar" class="h-full bg-primary-500 rounded-full transition-all duration-300" style="width:0%"></div>
+              </div>
+              <p class="text-xs text-slate-400 mt-1" id="score-label">Enter a score</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Feedback</label>
+          <textarea id="gf-feedback" rows="4" placeholder="Write your feedback here..."
+            name="feedback"
+            class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 resize-none transition-all"></textarea>
+          <!-- Quick feedback chips -->
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" onclick="addFeedback('Great work overall!')"
+              class="text-xs text-slate-500 bg-slate-100 hover:bg-primary-50 hover:text-primary-600 transition px-2.5 py-1 rounded-lg">Great work!</button>
+            <button type="button" onclick="addFeedback('Needs more documentation.')"
+              class="text-xs text-slate-500 bg-slate-100 hover:bg-primary-50 hover:text-primary-600 transition px-2.5 py-1 rounded-lg">Needs documentation</button>
+            <button type="button" onclick="addFeedback('Please review the time complexity analysis.')"
+              class="text-xs text-slate-500 bg-slate-100 hover:bg-primary-50 hover:text-primary-600 transition px-2.5 py-1 rounded-lg">Review complexity</button>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex gap-2">
+          <button type="submit" name="action" value="grade"
+            class="btn-primary flex-1 flex items-center justify-center gap-2 text-white font-semibold py-3 rounded-xl text-sm">
+            <i class="ri-checkbox-circle-line"></i> Submit Grade
+          </button>
+          <button type="submit" name="action" value="resubmit"
+            class="flex-shrink-0 flex items-center justify-center gap-1.5 text-sm font-medium text-sky-600 border border-sky-200 hover:bg-sky-50 transition py-3 px-4 rounded-xl">
+            <i class="ri-refresh-line"></i> Resubmit
+          </button>
+        </div>
+      </form>
+
+      <!-- Grade summary -->
+      
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'core/js/pages/instructor-submissions-1.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,7 @@
+.ann-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+    border-color: #e0e7ff;
+  }
+  .ann-card:hover {
+    border-color: #a5b4fc;
+  }

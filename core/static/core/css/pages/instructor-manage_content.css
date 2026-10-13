@@ -1,0 +1,13 @@
+.mc-summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  .mc-summary::-webkit-details-marker {
+    display: none;
+  }
+  .mc-chevron {
+    transition: transform 0.2s ease;
+  }
+  details[open] .mc-chevron {
+    transform: rotate(180deg);
+  }

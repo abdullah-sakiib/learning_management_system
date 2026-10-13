@@ -1,0 +1,317 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}EduFlow LMS{% endblock %}</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: DM Sans + DM Serif Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+  <!-- Remix Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+
+  <script src="{% static 'core/js/pages/base-1.js' %}"></script>
+
+  <link rel="stylesheet" href="{% static 'core/css/pages/base.css' %}">
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="harmony-theme bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
+
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR
+  ════════════════════════════════════════════ -->
+  <aside id="sidebar" class="bg-white border-r border-slate-100 flex flex-col h-screen overflow-hidden shadow-sm z-30 flex-shrink-0">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center flex-shrink-0 shadow-md">
+        <i class="ri-graduation-cap-fill text-white text-lg"></i>
+      </div>
+      <span class="logo-text font-semibold text-slate-800 text-lg tracking-tight">EduFlow</span>
+    </div>
+
+    <!-- User Info -->
+    <div class="user-info flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+      <div class="relative flex-shrink-0">
+        <img src="https://ui-avatars.com/api/?name={{ current_user_name|urlencode }}&background=4f46e5&color=fff&size=64"
+             class="w-9 h-9 rounded-full object-cover" alt="User Avatar"/>
+        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white"></span>
+      </div>
+      <div class="overflow-hidden">
+        <p class="text-sm font-semibold text-slate-800 truncate">{% block user_name %}{{ current_user_name }}{% endblock %}</p>
+        <p class="text-xs text-primary-500 font-medium truncate">{% block user_role %}{{ current_user_role|title }}{% endblock %}</p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+
+      <!-- Main Menu -->
+      <p class="nav-section-label text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Main Menu</p>
+
+      <a href="{% url 'dashboard' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_dashboard %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-dashboard-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Dashboard</span>
+        </span>
+        <span class="nav-tooltip">Dashboard</span>
+      </a>
+
+      <a href="{% if is_student %}{% url 'student_courses' %}{% elif is_instructor %}{% url 'instructor_my_courses' %}{% else %}{% url 'courses' %}{% endif %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_courses %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-book-open-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">{% if is_student %}Course Catalog{% else %}My Courses{% endif %}</span>
+        </span>
+        <span class="nav-tooltip">{% if is_student %}Course Catalog{% else %}My Courses{% endif %}</span>
+      </a>
+
+      {% if is_instructor or is_admin %}
+      <a href="{% url 'instructor_create_course' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_create_course %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-add-circle-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Create Course</span>
+        </span>
+        <span class="nav-tooltip">Create Course</span>
+      </a>
+
+      <a href="{% url 'instructor_submissions' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_submissions %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-file-check-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Submissions</span>
+        </span>
+        <span class="nav-tooltip">Submissions</span>
+      </a>
+      {% endif %}
+
+      {% if is_student %}
+      <a href="{% url 'assignments' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_assignments %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-file-list-3-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Assignments</span>
+        </span>
+        <span class="nav-tooltip">Assignments</span>
+        <!-- Badge -->
+      </a>
+
+      <a href="{% url 'grades' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_grades %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-bar-chart-box-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Grades</span>
+        </span>
+        <span class="nav-tooltip">Grades</span>
+      </a>
+      {% endif %}
+
+      <a href="{% url 'quiz' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_quiz %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-questionnaire-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Quizzes</span>
+        </span>
+        <span class="nav-tooltip">Quizzes</span>
+      </a>
+
+      <!-- Divider -->
+      <div class="pt-3 pb-1">
+        <p class="nav-section-label text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Account</p>
+      </div>
+
+      <a href="{% url 'profile' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_profile %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-user-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Profile</span>
+        </span>
+        <span class="nav-tooltip">Profile</span>
+      </a>
+
+      <a href="{% url 'announcements' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_announcements %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-megaphone-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Announcements</span>
+        </span>
+        <span class="nav-tooltip">Announcements</span>
+      </a>
+
+      <a href="{% url 'settings' %}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 cursor-pointer group {% block nav_settings %}{% endblock %}">
+        <span class="nav-item-inner flex items-center gap-3 w-full">
+          <i class="nav-icon ri-settings-3-line text-xl flex-shrink-0"></i>
+          <span class="nav-label text-sm font-medium">Settings</span>
+        </span>
+        <span class="nav-tooltip">Settings</span>
+      </a>
+
+    </nav>
+
+    <!-- Logout -->
+    <div class="p-3 border-t border-slate-100">
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all duration-200 cursor-pointer w-full">
+          <span class="nav-item-inner flex items-center gap-3 w-full">
+            <i class="nav-icon ri-logout-box-r-line text-xl flex-shrink-0"></i>
+            <span class="nav-label text-sm font-medium">Logout</span>
+          </span>
+          <span class="nav-tooltip">Logout</span>
+        </button>
+      </form>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN AREA
+  ════════════════════════════════════════════ -->
+  <div class="flex flex-col flex-1 overflow-hidden">
+
+    <!-- TOPBAR -->
+    <header class="bg-gradient-to-r from-white via-indigo-50/60 to-cyan-50/50 border-b border-slate-100 px-6 py-3.5 flex items-center gap-4 z-20 shadow-sm">
+
+      <!-- Sidebar Toggle Button -->
+      <button id="sidebar-toggle"
+              onclick="toggleSidebar()"
+              class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-primary-50 text-slate-500 hover:text-primary-600 transition-all duration-200 flex-shrink-0">
+        <i class="ri-menu-fold-line text-xl" id="toggle-icon"></i>
+      </button>
+
+      <!-- Page Title -->
+      <div class="flex-shrink-0">
+        <h1 class="text-base font-semibold text-slate-800">{% block page_title %}Dashboard{% endblock %}</h1>
+        <p class="text-xs text-slate-400">{% block page_subtitle %}Welcome back!{% endblock %}</p>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="flex-1 max-w-md mx-auto">
+        <div class="relative">
+          <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input id="topbar-search"
+                 type="text"
+                placeholder="{{ topbar_search_placeholder|default:'Search...' }}"
+                data-search-url="{{ topbar_course_search_url|default:'' }}"
+                 class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 transition-all duration-200 focus:bg-white focus:border-primary-300"/>
+        </div>
+      </div>
+
+      <!-- Right Side Actions -->
+      <div class="flex items-center gap-2 ml-auto">
+
+        {% if show_topbar_notifications %}
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button id="notif-btn"
+                  onclick="toggleNotif()"
+                  class="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-primary-100 text-slate-500 hover:text-primary-600 transition-all duration-200 relative">
+            <i class="ri-notification-3-line text-xl"></i>
+            <span class="badge-pulse absolute top-1.5 right-1.5 w-2 h-2 bg-primary-500 rounded-full"></span>
+          </button>
+
+          <!-- Notification Dropdown -->
+          <div id="notif-panel" class="topbar-panel-shell hidden absolute right-0 top-12 w-80 rounded-2xl border overflow-hidden z-50">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-cyan-50">
+              <h3 class="font-semibold text-slate-800 text-sm">Notifications</h3>
+              <span class="text-xs text-primary-600 font-semibold cursor-pointer hover:underline">Mark all read</span>
+            </div>
+            <div class="max-h-72 overflow-y-auto divide-y divide-slate-50">
+              {% for notif in topbar_notifications %}
+              <a href="{{ notif.url|default:'#' }}" class="topbar-panel-item flex gap-3 px-4 py-3 transition cursor-pointer">
+                <div class="w-8 h-8 rounded-full {{ notif.icon_wrap_class }} flex items-center justify-center flex-shrink-0">
+                  <i class="{{ notif.icon }} {{ notif.icon_class }} text-sm"></i>
+                </div>
+                <div>
+                  <p class="text-sm text-slate-700 font-medium">{{ notif.title }}</p>
+                  <p class="text-xs text-slate-400 mt-0.5">{{ notif.subtitle }}</p>
+                  <p class="text-xs text-slate-400">{{ notif.time }}</p>
+                </div>
+              </a>
+              {% empty %}
+              <div class="px-4 py-6 text-center">
+                <p class="text-sm text-slate-500">No notifications yet.</p>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="px-4 py-3 border-t border-indigo-100 text-center bg-gradient-to-r from-indigo-50/70 to-cyan-50/60">
+              <a href="{% url 'announcements' %}" class="text-xs text-primary-600 font-semibold hover:underline">View all notifications</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- User Avatar Dropdown -->
+        <div class="relative">
+          <button id="user-btn"
+                  onclick="toggleUserMenu()"
+              class="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gradient-to-r hover:from-indigo-50 hover:to-cyan-50 transition-all duration-200 border border-transparent hover:border-indigo-100">
+            <img src="https://ui-avatars.com/api/?name={{ current_user_name|urlencode }}&background=4f46e5&color=fff&size=64"
+                 class="w-8 h-8 rounded-full object-cover" alt="User"/>
+            <div class="text-left hidden sm:block">
+              <p class="text-xs font-semibold text-slate-700 leading-tight">{% block topbar_user %}{{ current_user_name }}{% endblock %}</p>
+              <p class="text-xs text-slate-400 leading-tight">{% block topbar_role %}{{ current_user_role|title }}{% endblock %}</p>
+            </div>
+            <i class="ri-arrow-down-s-line text-slate-400 text-sm"></i>
+          </button>
+
+          <!-- User Dropdown -->
+          <div id="user-dropdown" class="topbar-panel-shell hidden absolute right-0 top-12 w-52 rounded-2xl border overflow-hidden z-50">
+            <div class="px-4 py-3 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-cyan-50">
+              <p class="text-sm font-semibold text-slate-800">{{ current_user_name }}</p>
+              <p class="text-xs text-slate-400">{{ current_user_email|default:"no-email@set.local" }}</p>
+            </div>
+            <div class="py-1">
+              <a href="{% url 'profile' %}" class="topbar-panel-item flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 transition">
+                <i class="ri-user-line text-base"></i> My Profile
+              </a>
+              <a href="{% url 'settings' %}" class="topbar-panel-item flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:text-primary-600 transition">
+                <i class="ri-settings-3-line text-base"></i> Settings
+              </a>
+            </div>
+            <div class="border-t border-indigo-100 py-1 bg-gradient-to-r from-rose-50/30 to-white">
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition">
+                  <i class="ri-logout-box-r-line text-base"></i> Logout
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="flex-1 overflow-y-auto bg-slate-50">
+      <div class="page-content p-6">
+        {% if messages %}
+        <div id="global-flash-wrap" class="space-y-2 mb-4">
+          {% for message in messages %}
+          <div class="global-flash-message rounded-xl px-4 py-3 text-sm border transition-all duration-500 {% if message.tags == 'error' %}bg-red-50 text-red-700 border-red-100{% else %}bg-emerald-50 text-emerald-700 border-emerald-100{% endif %}">
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}
+        <!-- Page content goes here -->
+        {% endblock %}
+      </div>
+    </main>
+
+  </div><!-- end main area -->
+
+
+  <!-- ═══════════════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════════════════ -->
+  <script src="{% static 'core/js/pages/base-2.js' %}"></script>
+
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,400 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Manage Content - {{ course.title }} - EduFlow{% endblock %}
+{% block page_title %}Manage Content{% endblock %}
+{% block page_subtitle %}{{ course.title }}{% endblock %}
+{% block nav_courses %}active{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'core/css/pages/instructor-manage_content.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-6">
+
+    <details class="mc-accordion bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <summary class="mc-summary px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <h2 class="text-base font-semibold text-slate-800">Course Settings</h2>
+        <i class="ri-arrow-down-s-line text-slate-400 mc-chevron"></i>
+      </summary>
+      <div class="p-5">
+      <form id="course-edit-form" method="post" enctype="multipart/form-data" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="course_meta" />
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Course title</label>
+          <input name="title" value="{{ course.title }}" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Course title" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Short description</label>
+          <input name="short_description" value="{{ course.short_description }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Short one-line summary" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Full description</label>
+          <textarea name="description" rows="4" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Detailed description shown to students">{{ course.description }}</textarea>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Category</label>
+            <input name="category" value="{{ course.category }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="e.g. Computer Science" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Level</label>
+            <select name="level" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              <option value="Beginner" {% if course.level == 'Beginner' %}selected{% endif %}>Beginner</option>
+              <option value="Intermediate" {% if course.level == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+              <option value="Advanced" {% if course.level == 'Advanced' %}selected{% endif %}>Advanced</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Duration (weeks)</label>
+            <input name="duration_weeks" type="number" min="1" value="{{ course.duration_weeks }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Video lessons count</label>
+            <input name="lecture_count" type="number" min="0" value="{{ course.lecture_count }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Assignments count</label>
+            <input name="assignment_count" type="number" min="0" value="{{ course.assignment_count }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Quizzes count</label>
+            <input name="quiz_count" type="number" min="0" value="{{ course.quiz_count }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Enrollment Type</label>
+            <select name="enrollment_type" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              <option value="open" {% if course.enrollment_type == 'open' %}selected{% endif %}>Open enrollment</option>
+              <option value="approval" {% if course.enrollment_type == 'approval' %}selected{% endif %}>Approval required</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Capacity Mode</label>
+            <select name="capacity_mode" id="capacity-mode" onchange="toggleManageCapacity()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              <option value="unlimited" {% if not course.max_students %}selected{% endif %}>Unlimited students</option>
+              <option value="limited" {% if course.max_students %}selected{% endif %}>Limited students</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Max students</label>
+            <input name="max_students" id="max-students-input" type="number" min="1" value="{{ course.max_students|default:'' }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Required when limited" />
+          </div>
+          <div class="flex items-center">
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700 mt-5">
+              <input type="checkbox" name="allow_discussions" {% if course.allow_discussions %}checked{% endif %} /> Allow course discussion
+            </label>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400">Tip: counts are updated automatically when you add resources, assignments, and quizzes. You can also adjust manually if needed.</p>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Thumbnail</label>
+            <input type="file" name="thumbnail" accept="image/*" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Intro Video</label>
+            <input type="file" name="intro_video" accept="video/*" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" name="is_published" {% if course.is_published %}checked{% endif %} /> Publish course
+        </label>
+        {% if course.is_ended %}
+        <p class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl">
+          This course was ended on {{ course.ended_at|date:"M d, Y H:i" }}.
+        </p>
+        {% endif %}
+        <div class="flex flex-wrap gap-2">
+          <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">
+            Save course
+          </button>
+          <button
+            type="submit"
+            name="form_type"
+            value="end_course"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-sm font-semibold hover:bg-amber-100 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            {% if course.is_ended %}disabled{% endif %}
+            onclick="return confirm('End this course now? Students who completed all modules will be able to download certificates.');"
+          >
+            {% if course.is_ended %}Course Ended{% else %}End Course{% endif %}
+          </button>
+        </div>
+      </form>
+      </div>
+    </details>
+
+    <details class="mc-accordion bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <summary class="mc-summary px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <div>
+          <h2 class="text-base font-semibold text-slate-800">Assignments</h2>
+          <p class="text-sm text-slate-500">Create and manage course assignments</p>
+        </div>
+        <i class="ri-arrow-down-s-line text-slate-400 mc-chevron"></i>
+      </summary>
+      <div class="p-5">
+      <p class="text-sm text-slate-500 mb-4">Assignments created here will appear in the student Assignments page.</p>
+      <form method="post" enctype="multipart/form-data" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="create_assignment" />
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Assignment title</label>
+          <input name="assignment_title" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="e.g. TCP/IP Analysis Report" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Instructions/description</label>
+          <textarea name="assignment_description" rows="3" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="What students need to submit, format, and grading criteria"></textarea>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Due date and time</label>
+            <input type="datetime-local" name="due_date" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Publish at (optional)</label>
+            <input type="datetime-local" name="publish_at" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Maximum score</label>
+            <input type="number" min="1" name="max_score" value="100" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Attachment (optional)</label>
+            <input type="file" name="assignment_attachment" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+          </div>
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" name="is_assignment_published" checked /> Publish assignment now
+        </label>
+        <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition">
+          Create assignment
+        </button>
+      </form>
+
+      <div class="mt-5 border-t border-slate-100 pt-4">
+        <h3 class="text-sm font-semibold text-slate-700">Current assignments for this course</h3>
+        <div class="mt-3 space-y-2">
+          {% for assignment in assignments %}
+          <details class="rounded-xl border border-slate-100 bg-white">
+            <summary class="list-none cursor-pointer px-3 py-2 text-sm flex items-center justify-between gap-3">
+              <div>
+                <p class="font-medium text-slate-800">{{ assignment.title }}</p>
+                <p class="text-xs text-slate-500">
+                  Max {{ assignment.max_score }} points
+                  {% if assignment.due_date %} • Due {{ assignment.due_date|date:"M d, Y H:i" }}{% else %} • No due date{% endif %}
+                  {% if assignment.publish_at %} • Publishes {{ assignment.publish_at|date:"M d, Y H:i" }}{% endif %}
+                </p>
+              </div>
+              <span class="text-xs font-semibold px-2 py-1 rounded-full {% if assignment.is_published %}text-emerald-700 bg-emerald-50 border border-emerald-100{% else %}text-slate-600 bg-slate-100{% endif %}">
+                {% if assignment.is_published %}Published{% else %}Draft{% endif %}
+              </span>
+            </summary>
+            <div class="border-t border-slate-100 px-3 py-3 space-y-3">
+              <form method="post" enctype="multipart/form-data" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="edit_assignment" />
+                <input type="hidden" name="assignment_id" value="{{ assignment.id }}" />
+
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Assignment title</label>
+                  <input name="edit_assignment_title" value="{{ assignment.title }}" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-slate-500 mb-1">Instructions/description</label>
+                  <textarea name="edit_assignment_description" rows="3" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">{{ assignment.description }}</textarea>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Due date and time</label>
+                    <input type="datetime-local" name="edit_due_date" value="{% if assignment.due_date %}{{ assignment.due_date|date:'Y-m-d\\TH:i' }}{% endif %}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Publish at (optional)</label>
+                    <input type="datetime-local" name="edit_publish_at" value="{% if assignment.publish_at %}{{ assignment.publish_at|date:'Y-m-d\\TH:i' }}{% endif %}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Maximum score</label>
+                    <input type="number" min="1" name="edit_max_score" value="{{ assignment.max_score }}" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Replace attachment (optional)</label>
+                    <input type="file" name="edit_assignment_attachment" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                </div>
+
+                {% if assignment.attachment %}
+                <div class="text-xs text-slate-600 flex flex-wrap items-center gap-3">
+                  <a href="{{ assignment.attachment.url }}" target="_blank" rel="noopener" class="text-indigo-600 hover:text-indigo-700">Current attachment</a>
+                  <label class="inline-flex items-center gap-2">
+                    <input type="checkbox" name="edit_remove_attachment" /> Remove attachment
+                  </label>
+                </div>
+                {% endif %}
+
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                  <input type="checkbox" name="edit_is_assignment_published" {% if assignment.is_published %}checked{% endif %} /> Published
+                </label>
+
+                <button type="submit" class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition">
+                  Save changes
+                </button>
+              </form>
+
+              <div class="flex flex-wrap gap-2">
+                <form method="post" onsubmit="return confirm('Archive this assignment? Students will not see it anymore.');">
+                  {% csrf_token %}
+                  <input type="hidden" name="form_type" value="delete_assignment" />
+                  <input type="hidden" name="assignment_id" value="{{ assignment.id }}" />
+                  <button type="submit" class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition">
+                    Archive assignment
+                  </button>
+                </form>
+                </div>
+            </div>
+          </details>
+          {% empty %}
+          <p class="text-sm text-slate-500">No assignments created yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+      </div>
+    </details>
+
+    <details class="mc-accordion bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <summary class="mc-summary px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <h2 class="text-base font-semibold text-slate-800">Add Module Resource</h2>
+        <i class="ri-arrow-down-s-line text-slate-400 mc-chevron"></i>
+      </summary>
+      <div class="p-5">
+      <form method="post" enctype="multipart/form-data" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="add_module_resource" />
+        <div class="grid sm:grid-cols-2 gap-3">
+          <select name="module_id" class="border border-slate-200 rounded-xl px-3 py-2 text-sm">
+            <option value="">Choose existing module</option>
+            {% for module in modules %}
+            <option value="{{ module.id }}">{{ module.title }}</option>
+            {% endfor %}
+          </select>
+          <input name="new_module_title" class="border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Or create new module title" />
+        </div>
+        <input name="resource_title" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Resource title" />
+        <textarea name="resource_description" rows="2" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Resource description (optional)"></textarea>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <select name="resource_type" class="border border-slate-200 rounded-xl px-3 py-2 text-sm">
+            <option value="file" selected>Document/File upload</option>
+            <option value="video">Video upload</option>
+            <option value="link">External link</option>
+          </select>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Video file</label>
+            <input type="file" name="video_file" accept="video/*" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" title="Video file (used for Video upload type)" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">Document file (PDF supported)</label>
+            <input type="file" name="resource_file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.csv,.md" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" title="Document file (used for Document/File upload type)" />
+          </div>
+        </div>
+        <p class="text-xs text-slate-400">For PDF uploads, choose "Document/File upload" and select your PDF in the file input.</p>
+        <input type="url" name="external_url" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="https://... (required for link type)" />
+        <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition">
+          Upload resource
+        </button>
+      </form>
+      </div>
+    </details>
+
+    <details class="mc-accordion bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <summary class="mc-summary px-5 py-4 flex items-center justify-between gap-3 border-b border-slate-100">
+        <h2 class="text-base font-semibold text-slate-800">Current Modules and Resources</h2>
+        <i class="ri-arrow-down-s-line text-slate-400 mc-chevron"></i>
+      </summary>
+      <div class="p-5">
+      <div class="space-y-4">
+        {% for module in modules %}
+        <div class="border border-slate-100 rounded-xl p-4">
+          <p class="font-semibold text-slate-800">{{ module.title }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ module.resources.count }} resources</p>
+          <div class="mt-3 space-y-2">
+            {% for resource in module.resources.all %}
+            {% if resource.is_published %}
+            <div class="rounded-lg border border-slate-100 px-3 py-2 text-sm flex items-center justify-between gap-3">
+              <div>
+                <p class="font-medium text-slate-700">{{ resource.title }}</p>
+                <p class="text-xs text-slate-500">{{ resource.get_resource_type_display }}</p>
+              </div>
+              <div class="text-xs text-slate-500">
+                {% if resource.resource_type == 'video' and resource.video_file %}
+                <a href="{{ resource.video_file.url }}" class="text-indigo-600 hover:text-indigo-700">View video</a>
+                {% elif resource.resource_type == 'file' and resource.file %}
+                <a href="{{ resource.file.url }}" class="text-indigo-600 hover:text-indigo-700">Download file</a>
+                {% elif resource.resource_type == 'link' and resource.external_url %}
+                <a href="{{ resource.external_url }}" target="_blank" rel="noopener" class="text-indigo-600 hover:text-indigo-700">Open link</a>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+            {% empty %}
+            <p class="text-sm text-slate-400">No resources yet.</p>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-sm text-slate-500">No modules added yet.</p>
+        {% endfor %}
+      </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="space-y-5">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <h3 class="font-semibold text-slate-800 mb-3">Course Media</h3>
+      <div class="space-y-3 text-sm">
+        {% if course.thumbnail %}
+        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-full h-40 rounded-xl object-cover" />
+        {% else %}
+        <p class="text-slate-500">No thumbnail uploaded.</p>
+        {% endif %}
+        {% if course.intro_video %}
+        <div class="rounded-xl border border-slate-200 bg-black overflow-hidden max-h-64">
+          <video controls class="w-full h-full object-contain">
+            <source src="{{ course.intro_video.url }}" />
+          </video>
+        </div>
+        {% else %}
+        <p class="text-slate-500">No intro video uploaded.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <h3 class="font-semibold text-slate-800 mb-3">Other Courses</h3>
+      <div class="space-y-2">
+        {% for other in other_courses %}
+        <a href="{% url 'instructor_manage_content' other.id %}" class="block rounded-xl border border-slate-100 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">
+          {{ other.title }}
+        </a>
+        {% empty %}
+        <p class="text-sm text-slate-500">No other courses available.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'core/js/pages/instructor-manage_content-1.js' %}"></script>
+{% endblock %}

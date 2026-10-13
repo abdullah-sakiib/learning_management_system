@@ -1,0 +1,615 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}My Profile — EduFlow{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block page_subtitle %}Manage your account details{% endblock %}
+{% block nav_profile %}active{% endblock %}
+{% block user_name %}{{ display_name }}{% endblock %}
+{% block user_role %}{{ current_user_role|title }}{% endblock %}
+{% block topbar_user %}{{ display_name }}{% endblock %}
+{% block topbar_role %}{{ current_user_role|title }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'core/css/pages/profile-profile.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+  <!-- ══════════════════════════════════
+       PROFILE HEADER CARD
+  ══════════════════════════════════ -->
+  <div class="profile-card rounded-2xl border shadow-sm overflow-hidden mb-6 reveal">
+
+    <!-- Cover banner -->
+    <div class="h-28 bg-gradient-to-br from-primary-600 via-primary-500 to-indigo-400 relative">
+      <div class="absolute inset-0 opacity-20"
+           style="background-image:radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px); background-size:20px 20px;"></div>
+    </div>
+
+    <div class="px-6 pb-6">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-4">
+
+        <!-- Avatar -->
+        <div class="avatar-wrap relative w-20 h-20 flex-shrink-0 cursor-pointer" onclick="document.getElementById('avatar-input').click()">
+          <img id="avatar-preview"
+               src="{% if profile_obj.avatar %}{{ profile_obj.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ display_name|urlencode }}&background=4f46e5&color=fff&size=128{% endif %}"
+               class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md"/>
+          <div class="avatar-overlay absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center">
+            <i class="ri-camera-line text-white text-xl"></i>
+          </div>
+          <input type="file" id="avatar-input" name="avatar" form="profile-general-form" accept="image/*" class="hidden" onchange="previewAvatar(this)"/>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex items-center gap-2 sm:mb-1">
+          <button onclick="copyProfileLink()"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:border-primary-300 hover:text-primary-600 transition px-3 py-2 rounded-xl">
+            <i class="ri-share-line"></i> Share profile
+          </button>
+          <button onclick="showTab('security')"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:border-primary-300 hover:text-primary-600 transition px-3 py-2 rounded-xl">
+            <i class="ri-lock-line"></i> Change password
+          </button>
+        </div>
+      </div>
+
+      <!-- Name & role -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-slate-800">{{ display_name }}</h1>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs bg-primary-50 text-primary-600 font-semibold px-2.5 py-0.5 rounded-full">{{ current_user_role|title }}</span>
+            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-map-pin-line"></i> {% if profile_obj.city or profile_obj.country %}{{ profile_obj.city|default:"Unknown city" }}{% if profile_obj.country %}, {{ profile_obj.country }}{% endif %}{% else %}Location not set{% endif %}</span>
+            <span class="text-xs text-slate-400 flex items-center gap-1"><i class="ri-calendar-line"></i> Joined {{ request.user.date_joined|date:"M Y" }}</span>
+          </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="flex items-center gap-4">
+          {% if is_student %}
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.course_count }}</p>
+            <p class="text-xs text-slate-400">Courses</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.avg_grade|floatformat:1 }}%</p>
+            <p class="text-xs text-slate-400">Avg. grade</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.submitted }}</p>
+            <p class="text-xs text-slate-400">Submitted</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ profile_stats.certificates }}</p>
+            <p class="text-xs text-slate-400">Certificates</p>
+          </div>
+          {% else %}
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.total_courses }}</p>
+            <p class="text-xs text-slate-400">Courses Provided</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.total_students }}</p>
+            <p class="text-xs text-slate-400">Students</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.avg_rating|floatformat:1 }}</p>
+            <p class="text-xs text-slate-400">Avg. Rating</p>
+          </div>
+          <div class="w-px h-8 bg-slate-100"></div>
+          <div class="profile-stat text-center">
+            <p class="text-lg font-bold text-slate-800">{{ instructor_summary.rated_courses }}</p>
+            <p class="text-xs text-slate-400">Reviewed Courses</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       TAB NAV
+  ══════════════════════════════════ -->
+  <div class="flex items-center gap-1 bg-gradient-to-r from-indigo-50 to-cyan-50 border border-indigo-100 rounded-xl p-1 mb-6 w-fit reveal">
+    <button onclick="showTab('general')" id="tab-general"
+      class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
+      <i class="ri-user-line mr-1.5"></i>General
+    </button>
+    <button onclick="showTab('academic')" id="tab-academic"
+      class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
+      <i class="ri-graduation-cap-line mr-1.5"></i>Academic
+    </button>
+    <button onclick="showTab('security')" id="tab-security"
+      class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-500">
+      <i class="ri-shield-keyhole-line mr-1.5"></i>Security
+    </button>
+  </div>
+
+
+  <div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- ───── MAIN FORM PANEL ───── -->
+    <div class="lg:col-span-2">
+
+      <!-- ── TAB: GENERAL ── -->
+      <div id="panel-general" class="reveal">
+        <form method="POST" action="{% url 'profile' %}" enctype="multipart/form-data" id="profile-general-form">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="general"/>
+
+          <div class="profile-card rounded-2xl border shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <i class="ri-user-line text-primary-500"></i> Personal Information
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">First Name</label>
+                <input type="text" name="first_name" value="{{ request.user.first_name }}"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Last Name</label>
+                <input type="text" name="last_name" value="{{ request.user.last_name }}"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Email Address</label>
+              <div class="relative">
+                <i class="ri-mail-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+                <input type="email" name="email" value="{{ request.user.email }}"
+                  class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Phone Number</label>
+              <div class="relative">
+                <i class="ri-phone-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+                <input type="tel" name="phone" value="{{ profile_obj.phone }}" placeholder="+880 XXXXXXXXXX"
+                  class="input-field w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">City</label>
+                <input type="text" name="city" value="{{ profile_obj.city }}"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Country</label>
+                <input type="text" name="country" value="{{ profile_obj.country }}"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Bio</label>
+              <textarea name="bio" rows="3" placeholder="Tell us a little about yourself..."
+                class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all resize-none">{{ profile_obj.bio }}</textarea>
+              <p class="text-xs text-slate-400 mt-1">Max 200 characters</p>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="reset"
+              class="px-5 py-2.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+              Discard
+            </button>
+            <button type="submit"
+              class="btn-primary px-6 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2">
+              <i class="ri-save-line"></i> Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── TAB: ACADEMIC ── -->
+      <div id="panel-academic" class="hidden reveal">
+        <form method="POST" action="{% url 'profile' %}">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="academic"/>
+
+          <div class="profile-card rounded-2xl border shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <i class="ri-graduation-cap-line text-primary-500"></i> Academic Information
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              {% if is_student %}
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Student ID</label>
+                <input type="text" value="STU-{{ request.user.id|stringformat:'05d' }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Department</label>
+                <input type="text" name="department" value="{{ profile_obj.department }}"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              {% else %}
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Teacher ID</label>
+                <input type="text" value="{{ default_teacher_id }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Working University</label>
+                <input type="text" name="university" value="{{ profile_obj.university }}" placeholder="University / Institution"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 mb-4">
+              {% if is_student %}
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Year / Semester</label>
+                <select name="year"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all">
+                  <option>Year 1 — Semester 1</option>
+                  <option>Year 1 — Semester 2</option>
+                  <option selected>Year 2 — Semester 1</option>
+                  <option>Year 2 — Semester 2</option>
+                  <option>Year 3 — Semester 1</option>
+                  <option>Year 3 — Semester 2</option>
+                  <option>Year 4 — Semester 1</option>
+                  <option>Year 4 — Semester 2</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Average Grade</label>
+                <input type="text" value="{{ profile_stats.avg_grade|floatformat:1 }}%" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              {% else %}
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Total Courses</label>
+                <input type="text" value="{{ instructor_summary.total_courses }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Total Students</label>
+                <input type="text" value="{{ instructor_summary.total_students }}" readonly
+                  class="w-full px-3.5 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"/>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Designation</label>
+                <input type="text" name="designation" value="{{ profile_obj.designation }}" placeholder="Lecturer / Assistant Professor"
+                  class="input-field w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+              </div>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">{% if is_student %}Enrolled Courses{% else %}Courses You Teach{% endif %}</label>
+              <div class="space-y-2">
+                {% if is_student %}
+                {% for c in enrolled_courses %}
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center">
+                      <i class="ri-book-2-line text-primary-600 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-slate-700">{{ c.title }}</p>
+                      <p class="text-xs text-slate-400">{{ c.instructor }}</p>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center justify-end gap-2">
+                    {% if c.progress is not None %}
+                    <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">{{ c.progress }}% complete</span>
+                    {% else %}
+                    <span class="text-xs text-primary-600 font-semibold bg-primary-50 px-2 py-0.5 rounded-full">Instructor</span>
+                    {% endif %}
+                    {% if c.certificate_available %}
+                    <a href="{% url 'course_certificate_download' c.id %}" class="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full hover:bg-emerald-200 transition">Certificate</a>
+                    {% elif c.is_course_ended %}
+                    <span class="text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Certificate Locked</span>
+                    {% endif %}
+                  </div>
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-500">No active courses yet.</p>
+                {% endfor %}
+                {% else %}
+                {% for c in teaching_courses %}
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 bg-primary-100 rounded-lg flex items-center justify-center">
+                      <i class="ri-book-2-line text-primary-600 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-slate-700">{{ c.title }}</p>
+                      <p class="text-xs text-slate-400">{{ c.student_count }} students</p>
+                    </div>
+                  </div>
+                  <span class="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full">{{ c.rating|floatformat:1 }} rating</span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-500">No teaching courses yet.</p>
+                {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="submit"
+              class="btn-primary px-6 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2">
+              <i class="ri-save-line"></i> Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── TAB: SECURITY ── -->
+      <div id="panel-security" class="hidden reveal">
+        <form method="POST" action="{% url 'profile' %}" id="security-form">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="security"/>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-slate-800 mb-5 flex items-center gap-2">
+              <i class="ri-shield-keyhole-line text-primary-500"></i> Change Password
+            </h2>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Current Password</label>
+              <div class="relative">
+                <i class="ri-lock-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="password" id="current_password" name="current_password" placeholder="••••••••"
+                  class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+                <button type="button" onclick="togglePass('current_password','eye0')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  <i class="ri-eye-off-line" id="eye0"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">New Password</label>
+              <div class="relative">
+                <i class="ri-lock-2-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="password" name="new_password1" id="new_pass" placeholder="Min. 8 characters"
+                  oninput="checkStrength(this.value)"
+                  class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+                <button type="button" onclick="togglePass('new_pass','eye1')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  <i class="ri-eye-off-line" id="eye1"></i>
+                </button>
+              </div>
+              <!-- Strength bars -->
+              <div class="flex gap-1 mt-2">
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb1" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb2" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb3" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden"><div id="sb4" class="h-full w-0 rounded-full transition-all duration-300"></div></div>
+              </div>
+              <p class="text-xs text-slate-400 mt-1" id="strength-label">Use 8+ characters with numbers and symbols</p>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Confirm New Password</label>
+              <div class="relative">
+                <i class="ri-lock-2-line absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="password" name="new_password2" id="conf_pass" placeholder="Repeat new password"
+                  class="input-field w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 transition-all"/>
+                <button type="button" onclick="togglePass('conf_pass','eye2')" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  <i class="ri-eye-off-line" id="eye2"></i>
+                </button>
+              </div>
+              <p class="text-xs text-red-500 mt-1 hidden" id="pass-match-err">Passwords do not match.</p>
+            </div>
+          </div>
+
+          <!-- Danger zone -->
+          <div class="bg-white rounded-2xl border border-red-100 shadow-sm p-6 mb-4">
+            <h2 class="font-semibold text-red-500 mb-1 flex items-center gap-2">
+              <i class="ri-error-warning-line"></i> Danger Zone
+            </h2>
+            <p class="text-xs text-slate-500 mb-4">These actions are irreversible. Proceed with caution.</p>
+            <button type="button" onclick="confirmDeactivate()"
+              class="inline-flex items-center gap-2 text-sm font-medium text-red-500 border border-red-200 hover:bg-red-50 transition px-4 py-2.5 rounded-xl">
+              <i class="ri-user-unfollow-line"></i> Deactivate my account
+            </button>
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="button" onclick="showTab('general')"
+              class="px-5 py-2.5 text-sm font-medium text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+              Cancel
+            </button>
+            <button type="submit"
+              class="btn-primary px-6 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2">
+              <i class="ri-shield-check-line"></i> Update password
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- ───── RIGHT SIDEBAR ───── -->
+    <div class="space-y-5">
+
+      <!-- Avatar upload hint -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Profile Photo</h3>
+        <div class="flex flex-col items-center gap-3">
+          <img id="sidebar-avatar"
+               src="{% if profile_obj.avatar %}{{ profile_obj.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ display_name|urlencode }}&background=4f46e5&color=fff&size=128{% endif %}"
+               class="w-20 h-20 rounded-2xl object-cover shadow"/>
+          <button onclick="document.getElementById('avatar-input').click()"
+            class="text-xs font-medium text-primary-600 border border-primary-200 hover:bg-primary-50 transition px-4 py-2 rounded-xl">
+            <i class="ri-upload-2-line mr-1"></i> Upload photo
+          </button>
+          <p class="text-xs text-slate-400 text-center">JPG, PNG or GIF. Max 2MB.</p>
+        </div>
+      </div>
+
+      <!-- Account Info -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Account Details</h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Role</span>
+            <span class="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">{{ current_user_role|title }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Member since</span>
+            <span class="text-xs font-medium text-slate-700">{{ request.user.date_joined|date:"M d, Y" }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Last login</span>
+            <span class="text-xs font-medium text-slate-700">{% if request.user.last_login %}{{ request.user.last_login|date:"M d, Y H:i" }}{% else %}First login{% endif %}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Account status</span>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade summary / teaching summary -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 reveal">
+        {% if is_student %}
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Grade Summary</h3>
+        <div class="space-y-2.5">
+          {% for item in grade_summary %}
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600">{{ item.course }}</span>
+              <span class="font-semibold text-slate-700">{{ item.avg_percent|floatformat:1 }}/100</span>
+            </div>
+            <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-primary-400 rounded-full" style="width:{{ item.avg_percent|floatformat:0 }}%"></div>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-slate-500">No graded work yet. Complete assignments or quizzes to see your summary.</p>
+          {% endfor %}
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs text-slate-500">Average Grade</span>
+          <span class="text-base font-bold text-primary-600">{{ profile_stats.avg_grade|floatformat:1 }}%</span>
+        </div>
+        {% else %}
+        <h3 class="font-semibold text-slate-700 text-sm mb-3">Teaching Summary</h3>
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Courses Provided</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.total_courses }}</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Total Students</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.total_students }}</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Average Rating</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.avg_rating|floatformat:1 }} / 5.0</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Reviewed Courses</span>
+            <span class="font-semibold text-slate-700">{{ instructor_summary.rated_courses }}</span>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs text-slate-500">Teacher ID</span>
+          <span class="text-sm font-bold text-primary-600">{{ default_teacher_id }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Tab system
+  const tabs = ['general', 'academic', 'security'];
+  function showTab(name) {
+    tabs.forEach(t => {
+      document.getElementById('panel-' + t).classList.add('hidden');
+      document.getElementById('tab-' + t).classList.remove('active');
+    });
+    document.getElementById('panel-' + name).classList.remove('hidden');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  // Avatar preview
+  function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('avatar-preview').src = e.target.result;
+        document.getElementById('sidebar-avatar').src  = e.target.result;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Toggle password visibility
+  function togglePass(inputId, iconId) {
+    const inp  = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    icon.className = inp.type === 'password' ? 'ri-eye-off-line' : 'ri-eye-line';
+  }
+
+  // Password strength
+  function checkStrength(val) {
+    const colors = ['bg-red-400','bg-amber-400','bg-amber-400','bg-emerald-500'];
+    const labels = ['Too short','Weak — add numbers','Fair — add symbols','Strong password'];
+    let score = 0;
+    if (val.length >= 8)  score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^a-zA-Z0-9]/.test(val)) score++;
+    if (val.length >= 12) score++;
+    ['sb1','sb2','sb3','sb4'].forEach((b,i) => {
+      const el = document.getElementById(b);
+      el.style.width = i < score ? '100%' : '0%';
+      el.className = `h-full rounded-full transition-all duration-300 ${i < score ? colors[score-1] : ''}`;
+    });
+    const lbl = document.getElementById('strength-label');
+    lbl.textContent = val.length === 0 ? 'Use 8+ characters with numbers and symbols' : labels[Math.max(score-1, 0)];
+    lbl.className = 'text-xs mt-1 ' + (score >= 4 ? 'text-emerald-500' : score >= 2 ? 'text-amber-500' : 'text-red-400');
+  }
+
+  // Copy profile link
+  function copyProfileLink() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      alert('Profile link copied!');
+    });
+  }
+
+  // Deactivate confirm
+  function confirmDeactivate() {
+    if (confirm('Are you sure you want to deactivate your account? This action cannot be undone.')) {
+      window.location.href = '{% url "logout" %}';
+    }
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80);
+    });
+  }, { threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+{% endblock %}
